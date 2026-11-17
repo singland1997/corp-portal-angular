@@ -1,0 +1,32 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [modal]="true"
+  [header]="title()"
+  [draggable]="false"
+  [resizable]="false"
+  [closeAriaLabel]="i18n.t('close')"
+  [closable]="!busy()"
+  [closeOnEscape]="!busy()"
+  [pt]="{
+    root: { class: 'w-[440px] max-w-[calc(100vw-2rem)]' },
+    content: { class: 'overscroll-contain' },
+  }"
+>
+  <p class="leading-relaxed text-zinc-600">{{ message() }}</p>
+  <ng-template #footer>
+    <p-button
+      [label]="i18n.t('cancel')"
+      severity="secondary"
+      [outlined]="true"
+      [disabled]="busy()"
+      (onClick)="visible.set(false)"
+    />
+    <p-button
+      [label]="confirmLabel() || i18n.t('confirm')"
+      [severity]="danger() ? 'danger' : 'primary'"
+      [loading]="busy()"
+      (onClick)="confirmed.emit()"
+    />
+  </ng-template>
+</p-dialog>

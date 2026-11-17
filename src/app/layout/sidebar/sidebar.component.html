@@ -1,0 +1,51 @@
+<div class="flex h-full flex-col bg-surface">
+  <a
+    class="flex items-center gap-3 px-5 py-6 text-xl font-bold tracking-tight"
+    routerLink="/dashboard"
+    (click)="navigated.emit()"
+  >
+    <img
+      src="images/logo.png"
+      alt=""
+      width="36"
+      height="36"
+      class="size-9 shrink-0 rounded-full object-contain"
+    />
+    <span>Corp Portal</span>
+  </a>
+  <div class="mx-4 mb-4 flex items-center gap-3 border-y border-line px-2 py-3">
+    <p-avatar
+      [label]="corporate.current()?.initials"
+      [pt]="{ root: { class: 'shrink-0 bg-zinc-100 text-xs font-semibold' } }"
+    />
+    <div>
+      <strong class="block text-xs leading-relaxed">{{ corporate.name() }}</strong>
+      <small class="mt-1 block text-xs text-muted">{{ corporate.current()?.code }}</small>
+    </div>
+  </div>
+  <nav class="min-h-0 flex-1 overflow-y-auto px-3" [attr.aria-label]="i18n.t('workspace')">
+    <p-menu
+      [model]="menuItems()"
+      [pt]="{ root: { class: 'w-full border-0' } }"
+      [dt]="{ list: { padding: '0', gap: '0.25rem' } }"
+    >
+      <ng-template #submenuheader let-group>
+        <span class="text-xs font-medium uppercase tracking-wider text-muted">
+          {{ group.label }}
+        </span>
+      </ng-template>
+      <ng-template #item let-item>
+        <a
+          [routerLink]="item.routerLink"
+          routerLinkActive="bg-brand-soft text-ink font-semibold"
+          ariaCurrentWhenActive="page"
+          class="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-xs hover:bg-brand-soft"
+          (click)="navigated.emit()"
+        >
+          <i [class]="item.icon" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      </ng-template>
+    </p-menu>
+  </nav>
+</div>

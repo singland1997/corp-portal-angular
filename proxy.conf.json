@@ -1,0 +1,90 @@
+{
+  "/api/v1/auth/**": {
+    "target": "http://127.0.0.1:4101",
+    "secure": false
+  },
+  "/api/v1/users/**": {
+    "target": "http://127.0.0.1:4101",
+    "secure": false
+  },
+  "/api/v1/roles/**": {
+    "target": "http://127.0.0.1:4101",
+    "secure": false
+  },
+  "/api/v1/corporates/**": {
+    "target": "http://127.0.0.1:4102",
+    "secure": false
+  },
+  "/api/v1/pools/**": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  },
+  "/api/v1/dashboard/**": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/users": {
+    "target": "http://127.0.0.1:4101",
+    "secure": false
+  },
+  "/api/v1/roles": {
+    "target": "http://127.0.0.1:4101",
+    "secure": false
+  },
+  "/api/v1/corporates": {
+    "target": "http://127.0.0.1:4102",
+    "secure": false
+  },
+  "/api/v1/pools": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  },
+  "/api/v1/sims": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  },
+  "/api/v1/sims/**": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  },
+  "/api/v1/packages": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  },
+  "/api/v1/packages/**": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  },
+  "/api/v1/dashboard": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/usage": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/usage/**": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/reports": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/reports/**": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/report-jobs": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/report-jobs/**": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
+  },
+  "/api/v1/sim-operations": {
+    "target": "http://127.0.0.1:4103",
+    "secure": false
+  }
+}

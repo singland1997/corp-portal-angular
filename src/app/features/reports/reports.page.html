@@ -1,0 +1,98 @@
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="t('title')" />
+
+  <!-- เลือกรายงานและช่วงวันที่ -->
+  <cp-card>
+    <div class="flex flex-wrap items-end gap-4">
+      <div class="grid min-w-64 gap-2">
+        <label for="report-select" class="text-sm">{{ t('report') }}</label>
+        <p-select
+          inputId="report-select"
+          [options]="reportOptions()"
+          [group]="true"
+          optionLabel="label"
+          optionValue="value"
+          optionGroupLabel="label"
+          optionGroupChildren="items"
+          [ngModel]="reportId()"
+          (ngModelChange)="selectReport($event)"
+          appendTo="body"
+        />
+      </div>
+
+      @if (report()?.dated) {
+        <div class="grid gap-2">
+          <label for="report-from" class="text-sm">{{ t('from') }}</label>
+          <input
+            pInputText
+            id="report-from"
+            type="date"
+            [ngModel]="from()"
+            (ngModelChange)="from.set($event)"
+          />
+        </div>
+        <div class="grid gap-2">
+          <label for="report-to" class="text-sm">{{ t('to') }}</label>
+          <input
+            pInputText
+            id="report-to"
+            type="date"
+            [ngModel]="to()"
+            (ngModelChange)="to.set($event)"
+          />
+        </div>
+        <p-button
+          [label]="t('clearDates')"
+          [ariaLabel]="t('clearDates')"
+          icon="pi pi-filter-slash"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="clearDates()"
+        />
+      }
+
+      <p-button
+        class="ml-auto"
+        [label]="t('exportCsv')"
+        [ariaLabel]="t('exportCsv')"
+        icon="pi pi-download"
+        severity="secondary"
+        [disabled]="!rows().length || loading()"
+        (onClick)="exportCsv()"
+      />
+    </div>
+
+    @if (report(); as selected) {
+      <p class="mt-4 text-sm text-muted">
+        {{ t(selected.description) }}
+        @if (!selected.dated) {
+          · {{ t('snapshotHint') }}
+        }
+      </p>
+    }
+    @if (invalidDates()) {
+      <p-message class="mt-4" severity="warn" role="alert">{{ t('invalidDates') }}</p-message>
+    }
+  </cp-card>
+
+  <!-- ผลรายงาน -->
+  @if (loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (error(); as failure) {
+    <cp-feedback-state kind="error" [description]="i18n.t(failure)" (retry)="reload()" />
+  } @else if (report(); as selected) {
+    <cp-card [title]="t(selected.title)" [flush]="true">
+      <cp-data-table
+        [rows]="tableRows()"
+        [columns]="columns()"
+        [label]="t('rowsLabel')"
+        [searchPlaceholder]="t('search')"
+        [cellTemplate]="cellTemplate"
+      />
+    </cp-card>
+  }
+</div>
+
+<ng-template #cellTemplate let-row let-column="column">
+  {{ cell(row, column.field) }}
+</ng-template>

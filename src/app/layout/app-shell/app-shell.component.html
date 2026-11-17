@@ -1,0 +1,29 @@
+<a
+  class="fixed -top-24 left-4 z-2000 rounded-lg bg-brand px-4 py-3 focus:top-4"
+  href="#main-content"
+>
+  {{ i18n.t('skip') }}
+</a>
+<aside class="fixed inset-y-0 left-0 z-30 hidden w-62 border-r border-line min-[901px]:block">
+  <cp-sidebar />
+</aside>
+<div class="flex min-h-dvh min-w-0 flex-col min-[901px]:ml-62">
+  <cp-header class="sticky top-0 z-20" (menuToggle)="mobileMenu.set(true)" />
+  <main
+    class="mx-auto w-full max-w-[1920px] flex-1 px-4 py-6 outline-none sm:p-6 min-[901px]:p-8 min-[2560px]:max-w-[3200px] min-[2560px]:p-10"
+    id="main-content"
+    tabindex="-1"
+  >
+    <router-outlet />
+  </main>
+  <cp-footer />
+</div>
+<p-drawer
+  [visible]="mobileMenu()"
+  (visibleChange)="mobileMenu.set($event)"
+  [header]="i18n.t('workspace')"
+  [closeButtonProps]="{ ariaLabel: i18n.t('closeMenu') }"
+  [pt]="{ root: { class: 'w-72' } }"
+>
+  <cp-sidebar (navigated)="mobileMenu.set(false)" />
+</p-drawer>

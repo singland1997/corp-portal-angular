@@ -1,0 +1,29 @@
+<p-card
+  [pt]="{
+    root: { class: 'h-full overflow-hidden border border-line' },
+    body: { class: flush() ? 'p-0 gap-0' : 'p-4 sm:p-6 gap-4' },
+  }"
+>
+  @if (this.title()) {
+    <ng-template #title>
+      <div
+        class="flex flex-wrap items-center justify-between gap-4"
+        [class]="flush() ? 'px-4 pt-4 sm:px-6 sm:pt-6' : ''"
+      >
+        <div>
+          <h2 class="text-base font-semibold">{{ this.title() }}</h2>
+          @if (subtitle()) {
+            <p class="mt-1.5 text-xs font-normal leading-relaxed text-muted">{{ subtitle() }}</p>
+          }
+        </div>
+        <ng-content select="[card-actions]" />
+      </div>
+    </ng-template>
+  }
+  <ng-template #content>
+    <div [class]="flush() ? 'pt-4' : ''">
+      <ng-content />
+    </div>
+    <ng-content select="[card-footer]" />
+  </ng-template>
+</p-card>

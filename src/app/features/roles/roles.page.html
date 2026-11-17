@@ -1,0 +1,42 @@
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="i18n.t('roles')" />
+  @if (loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (error(); as failure) {
+    <cp-feedback-state kind="error" [description]="i18n.t(failure)" (retry)="reload()" />
+  } @else {
+    <cp-card [flush]="true">
+      <cp-data-table
+        [rows]="rows()"
+        [columns]="columns()"
+        [label]="i18n.t('roles')"
+        [actions]="actions()"
+        (rowAction)="openDetails($event)"
+      />
+    </cp-card>
+  }
+</div>
+<p-dialog
+  [visible]="selected() !== null"
+  (visibleChange)="!$event && selected.set(null)"
+  [header]="t('permissions')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeAriaLabel]="i18n.t('close')"
+  [pt]="{ root: { class: 'w-[640px] max-w-[calc(100vw-2rem)]' } }"
+>
+  @if (selected(); as role) {
+    <h2 class="mb-2 text-lg font-semibold">{{ roleLabel(role) }}</h2>
+    <p class="mb-4 text-muted">{{ role.description }}</p>
+    @if (role.permissions.length) {
+      <ul class="grid gap-2">
+        @for (permission of role.permissions; track permission) {
+          <li class="rounded-lg border border-line p-3 text-sm break-all">{{ permission }}</li>
+        }
+      </ul>
+    } @else {
+      <cp-feedback-state kind="empty" />
+    }
+  }
+</p-dialog>

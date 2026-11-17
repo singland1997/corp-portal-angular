@@ -1,0 +1,35 @@
+<div
+  class="grid justify-items-center gap-3 px-6 py-10 text-center"
+  [attr.role]="kind() === 'error' ? 'alert' : 'status'"
+  [attr.aria-busy]="kind() === 'loading'"
+>
+  @if (kind() === 'loading') {
+    <span class="sr-only">{{ i18n.t('loading') }}</span>
+    <div class="grid w-full gap-3" aria-hidden="true">
+      @for (n of [1, 2, 3]; track n) {
+        <p-skeleton height="2.5rem" />
+      }
+    </div>
+  } @else {
+    <i
+      class="text-3xl text-muted"
+      [class]="kind() === 'error' ? 'pi pi-exclamation-circle' : 'pi pi-inbox'"
+      aria-hidden="true"
+    ></i>
+    <h3 class="text-sm font-semibold">
+      {{ title() || i18n.t(kind() === 'error' ? 'error' : 'empty') }}
+    </h3>
+    <p class="max-w-md text-xs leading-relaxed text-muted">
+      {{ description() || i18n.t(kind() === 'error' ? 'errorHint' : 'emptyHint') }}
+    </p>
+    @if (kind() === 'error') {
+      <p-button
+        [label]="i18n.t('retry')"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="retry.emit()"
+      />
+    }
+  }
+</div>

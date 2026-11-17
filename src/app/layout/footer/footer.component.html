@@ -1,0 +1,12 @@
+<footer
+  class="flex flex-wrap justify-between gap-4 border-t border-line px-4 py-5 text-xs text-muted sm:px-8"
+>
+  <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <span>© {{ year }} {{ i18n.t('footer') }}</span>
+    <cp-app-version />
+  </div>
+  <a class="flex items-center gap-2 hover:text-ink" routerLink="/api-docs">
+    {{ i18n.t('help') }}
+    <i class="pi pi-arrow-up-right text-xs" aria-hidden="true"></i>
+  </a>
+</footer>

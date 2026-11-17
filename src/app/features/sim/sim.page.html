@@ -1,0 +1,56 @@
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="i18n.t('sim')" />
+  @if (resource.loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (resource.error(); as error) {
+    <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="resource.reload()" />
+  } @else {
+    <cp-card [flush]="true">
+      <cp-data-table
+        [rows]="rows()"
+        [columns]="columns()"
+        [label]="i18n.t('sim')"
+        [actions]="actions()"
+        (rowAction)="openDetails($event)"
+      >
+        <p-select
+          table-filters
+          [options]="statusOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="status()"
+          (ngModelChange)="status.set($event)"
+          [ariaLabel]="i18n.t('status')"
+          appendTo="body"
+        />
+      </cp-data-table>
+    </cp-card>
+  }
+</div>
+<p-dialog
+  [visible]="selected() !== null"
+  (visibleChange)="!$event && selected.set(null)"
+  [header]="i18n.t('details')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeAriaLabel]="i18n.t('close')"
+  [pt]="{ root: { class: 'w-[640px] max-w-[calc(100vw-2rem)]' } }"
+>
+  @if (selected(); as row) {
+    <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      @for (column of columns(); track column.field) {
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">{{ column.header }}</dt>
+          <dd class="font-medium wrap-anywhere">
+            @if (column.type === 'status') {
+              <cp-status-badge [status]="row.status" />
+            } @else {
+              {{ row[column.field] ?? '—' }}
+            }
+          </dd>
+        </div>
+      }
+    </dl>
+  }
+</p-dialog>

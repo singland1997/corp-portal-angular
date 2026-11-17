@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+@import 'primeicons/primeicons.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/noto-sans-thai';
+@import '@fontsource/ibm-plex-sans-thai/500.css';
+@import '@fontsource/ibm-plex-sans-thai/700.css';
+
+/* Tailwind utilities share the PrimeNG preset's runtime design tokens. */
+@theme inline {
+  --color-brand: var(--p-primary-color);
+  --color-brand-hover: var(--p-primary-hover-color);
+  --color-brand-soft: var(--p-highlight-background);
+  --color-canvas: var(--p-surface-50);
+  --color-surface: var(--p-surface-0);
+  --color-ink: var(--p-surface-900);
+  --color-muted: var(--p-surface-500);
+  --color-line: var(--p-surface-200);
+  --font-sans: 'Inter Variable', 'Noto Sans Thai Variable', system-ui, sans-serif;
+  --font-thai: 'IBM Plex Sans Thai', sans-serif;
+}
+
+/* Only document defaults and accessibility belong here; layouts use utilities. */
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-canvas font-sans text-sm text-ink;
+  }
+  button:not(:disabled),
+  a {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--p-focus-ring-color);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

@@ -1,0 +1,137 @@
+@if (resource.loading()) {
+  <cp-feedback-state kind="loading" />
+} @else if (resource.error(); as error) {
+  <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="resource.reload()" />
+} @else {
+  @if (snapshot(); as snapshot) {
+    <div class="grid gap-4 md:gap-6">
+      <cp-page-header [title]="i18n.t('dashboard')">
+        <span
+          class="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-xs text-zinc-600"
+        >
+          <i class="pi pi-calendar" aria-hidden="true"></i>
+          {{ updatedLabel() }}
+        </span>
+      </cp-page-header>
+      <div class="grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 xl:grid-cols-4">
+        <cp-stat-card
+          [label]="i18n.t('totalNumbers')"
+          [value]="numberCounts().total"
+          [hint]="numberCounts().active + ' ' + i18n.t('active')"
+          icon="pi-mobile"
+        />
+        <cp-stat-card
+          [label]="i18n.t('active')"
+          [value]="numberCounts().active"
+          [hint]="
+            numberCounts().inactive +
+            ' ' +
+            i18n.t('inactive') +
+            ' · ' +
+            numberCounts().suspended +
+            ' ' +
+            i18n.t('suspended')
+          "
+          icon="pi-check-circle"
+        />
+        <cp-stat-card
+          [label]="i18n.t('totalUsage')"
+          [value]="snapshot.totalUsageTb"
+          unit="TB"
+          [hint]="updatedLabel()"
+          icon="pi-chart-line"
+        />
+        <cp-stat-card
+          [label]="i18n.t('poolUsage')"
+          [value]="poolPercentage()"
+          unit="%"
+          [hint]="(snapshot.pool.usedTb ?? '—') + ' / ' + (snapshot.pool.quotaTb ?? '—') + ' TB'"
+          icon="pi-database"
+        />
+      </div>
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
+        <cp-card [title]="i18n.t('dataTrend')" [subtitle]="i18n.t('dataTrendHint')">
+          <cp-chart
+            type="line"
+            [data]="usageData()"
+            [options]="lineOptions"
+            [label]="usageChartLabel()"
+          />
+          <div class="mt-5 flex flex-wrap justify-between gap-3 text-xs text-muted">
+            <span>{{ updatedLabel() }}</span>
+            <strong class="font-medium text-zinc-600">
+              {{ totalWeekUsageGb() ?? '—' }} GB · {{ knownDays().length }}/{{
+                snapshot.dailyUsageGb.length
+              }}
+              {{ i18n.t('days') }}
+            </strong>
+          </div>
+        </cp-card>
+        <cp-card [title]="i18n.t('poolTitle')" [subtitle]="corporate.current()?.lotId ?? ''">
+          @if (poolData(); as data) {
+            <div class="relative">
+              <cp-chart
+                type="doughnut"
+                [data]="data"
+                [options]="donutOptions"
+                [height]="210"
+                [label]="poolChartLabel()"
+              />
+              <div
+                class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1"
+              >
+                <strong class="text-3xl font-semibold">{{ poolPercentage() ?? '—' }}%</strong>
+                <span class="text-xs text-muted">{{ i18n.t('used') }}</span>
+              </div>
+            </div>
+          } @else {
+            <cp-feedback-state kind="empty" [description]="i18n.t('unknown')" />
+          }
+          <div class="mt-5 grid gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="size-2 rounded-sm bg-brand"></span>
+              {{ i18n.t('used') }}
+              <strong class="ml-auto">{{ snapshot.pool.usedTb ?? '—' }} TB</strong>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="size-2 rounded-sm bg-line"></span>
+              {{ i18n.t('remaining') }}
+              <strong class="ml-auto">
+                {{ remainingTb() === null ? '—' : (remainingTb() | number: '1.0-3') }} TB
+              </strong>
+            </div>
+          </div>
+        </cp-card>
+      </div>
+      <cp-card [title]="i18n.t('recent')" [subtitle]="i18n.t('activityHint')">
+        <a card-actions routerLink="/corporate" class="flex items-center gap-2 text-xs font-medium">
+          {{ i18n.t('viewAll') }}
+          <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </a>
+        <div class="grid divide-y divide-line">
+          @if (snapshot.activityComplete === false) {
+            <p class="pb-3 text-xs text-muted" role="note">{{ i18n.t('activityPartial') }}</p>
+          }
+          @for (item of snapshot.activity; track $index) {
+            <div class="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
+              <span
+                class="grid size-9 shrink-0 place-items-center rounded-lg bg-zinc-100 text-muted"
+              >
+                <i class="pi pi-history" aria-hidden="true"></i>
+              </span>
+              <div class="grid min-w-0 flex-1 gap-1 text-xs">
+                <strong class="font-medium">{{ operationLabel(item) }}</strong>
+                <span class="text-xs text-muted">
+                  {{ item.mobile ?? '—' }} · {{ activityTime(item.time) }}
+                </span>
+              </div>
+              <cp-status-badge [status]="item.status" />
+            </div>
+          } @empty {
+            <cp-feedback-state kind="empty" />
+          }
+        </div>
+      </cp-card>
+    </div>
+  }
+}

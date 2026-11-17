@@ -1,0 +1,37 @@
+<div class="flex min-h-dvh flex-col">
+  <header
+    class="flex shrink-0 items-center justify-between gap-3 px-4 sm:px-8"
+    [class]="compact() ? 'py-3 [@media(max-height:700px)]:py-2' : 'py-5'"
+  >
+    <a
+      routerLink="/login"
+      queryParamsHandling="preserve"
+      class="flex items-center gap-2 text-lg font-bold tracking-tight"
+    >
+      <img
+        src="images/logo.png"
+        alt=""
+        width="36"
+        height="36"
+        class="size-9 shrink-0 rounded-full object-contain"
+      />
+      Corp Portal
+    </a>
+    <cp-language-switch />
+  </header>
+  <main
+    class="flex flex-1 items-center justify-center px-4"
+    [class]="compact() ? 'py-3 [@media(max-height:700px)]:py-2' : 'py-10'"
+  >
+    <div class="w-full max-w-md">
+      <ng-content />
+    </div>
+  </main>
+  <footer
+    class="grid shrink-0 justify-items-center px-4 text-center text-xs text-muted"
+    [class]="compact() ? 'gap-1 py-3 [@media(max-height:700px)]:py-2' : 'gap-2 py-6'"
+  >
+    <span>{{ i18n.t('footer') }}</span>
+    <cp-app-version />
+  </footer>
+</div>

@@ -1,0 +1,26 @@
+export const rolesEn = {
+  name: 'Role',
+  description: 'Description',
+  permissions: 'Permissions',
+  permissionCount: 'Permission count',
+  permission: 'Permission',
+  admin: 'System administrator',
+  sales: 'Sales',
+  corporate: 'Corporate administrator',
+  adminDescription: 'Manages every corporate, portal users and platform reports.',
+  salesDescription: 'Operates assigned corporates and their platform reports; cannot manage users.',
+  corporateDescription: 'Administers one corporate organization.',
+};
+export const rolesTh: Record<keyof typeof rolesEn, string> = {
+  name: 'บทบาท',
+  description: 'รายละเอียด',
+  permissions: 'สิทธิ์การใช้งาน',
+  permissionCount: 'จำนวนสิทธิ์',
+  permission: 'สิทธิ์',
+  admin: 'ผู้ดูแลระบบ',
+  sales: 'ฝ่ายขาย',
+  corporate: 'ผู้ดูแลองค์กร',
+  adminDescription: 'ดูแลทุกองค์กร ผู้ใช้งานพอร์ทัล และรายงานภาพรวม',
+  salesDescription: 'ดูแลองค์กรที่ได้รับมอบหมายและรายงานภาพรวมขององค์กรนั้น ไม่สามารถจัดการผู้ใช้',
+  corporateDescription: 'ดูแลองค์กรของตนเองหนึ่งองค์กร',
+};

@@ -1,0 +1,86 @@
+<cp-auth-layout [compact]="true">
+  <div class="mb-4 text-center [@media(max-height:700px)]:mb-3">
+    <span
+      class="mb-3 inline-flex size-12 items-center justify-center rounded-xl bg-brand-soft [@media(max-height:800px)]:hidden"
+    >
+      <i class="pi pi-lock text-2xl" aria-hidden="true"></i>
+    </span>
+    <h1 class="text-2xl font-semibold tracking-tight">{{ i18n.t('signInTitle') }}</h1>
+  </div>
+  <cp-card>
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      class="grid gap-4 [@media(max-height:700px)]:gap-3"
+      [attr.aria-busy]="busy()"
+    >
+      @if (failure(); as error) {
+        <p-message severity="error" role="alert">{{ i18n.t(error) }}</p-message>
+      }
+      <cp-form-field
+        inputId="login-email"
+        [label]="i18n.t('emailAddress')"
+        [required]="true"
+        [error]="fieldError('email')"
+      >
+        <input
+          pInputText
+          id="login-email"
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          class="w-full"
+          required
+          [readonly]="busy()"
+          [attr.aria-describedby]="fieldError('email') ? 'login-email-message' : null"
+          [attr.aria-invalid]="fieldError('email') !== ''"
+        />
+      </cp-form-field>
+      <cp-form-field
+        inputId="login-password"
+        [label]="i18n.t('password')"
+        [required]="true"
+        [error]="fieldError('password')"
+      >
+        <div class="relative">
+          <input
+            pInputText
+            id="login-password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+            required
+            class="w-full pr-12"
+            [readonly]="busy()"
+            [attr.aria-describedby]="fieldError('password') ? 'login-password-message' : null"
+            [attr.aria-invalid]="fieldError('password') !== ''"
+          />
+          <div class="absolute inset-y-0 right-1 flex items-center">
+            <p-button
+              [icon]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"
+              [text]="true"
+              severity="secondary"
+              [ariaLabel]="i18n.t(showPassword() ? 'hidePassword' : 'showPassword')"
+              [pt]="{ root: { class: 'size-8', 'aria-pressed': showPassword() } }"
+              (onClick)="togglePasswordVisibility()"
+            />
+          </div>
+        </div>
+      </cp-form-field>
+      <a
+        routerLink="/forgot-password"
+        queryParamsHandling="preserve"
+        class="justify-self-end text-sm font-medium underline-offset-4 hover:underline"
+      >
+        {{ i18n.t('forgotPassword') }}
+      </a>
+      <p-button
+        type="submit"
+        [label]="i18n.t('signIn')"
+        [loading]="busy()"
+        [disabled]="busy()"
+        [pt]="{ root: { class: 'w-full' } }"
+      />
+    </form>
+  </cp-card>
+</cp-auth-layout>

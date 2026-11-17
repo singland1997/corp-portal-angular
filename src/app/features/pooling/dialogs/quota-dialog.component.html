@@ -1,0 +1,145 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="text.t(step() === 'review' ? 'preview' : draft.direction)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeAriaLabel]="text.t('close')"
+  [pt]="{ root: { class: 'w-[600px] max-w-[calc(100vw-2rem)]' } }"
+>
+  @if (pool(); as target) {
+    <div class="grid gap-5">
+      <div>
+        <strong>{{ target.name }}</strong>
+        <p class="mt-1 text-sm text-muted">{{ target.corporate }} · {{ target.lot ?? '—' }}</p>
+      </div>
+
+      @if (step() === 'edit') {
+        <!-- ขั้นที่ 1: กรอกจำนวนและเหตุผล -->
+        <dl class="grid grid-cols-2 gap-4 rounded-lg bg-zinc-50 p-4">
+          <div>
+            <dt class="text-xs text-muted">{{ text.t('total') }}</dt>
+            <dd class="mt-1 font-semibold">{{ text.formatData(target.quotaMb) }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-muted">{{ text.t('remaining') }}</dt>
+            <dd class="mt-1 font-semibold">
+              {{ text.formatData(remainingOf(target)) }}
+            </dd>
+          </div>
+        </dl>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2 grid gap-2">
+            <label for="quota-amount">
+              {{ text.t('amount') }}
+              <span class="text-red-700" aria-hidden="true">*</span>
+            </label>
+            <p-inputnumber
+              inputId="quota-amount"
+              [(ngModel)]="draft.amount"
+              [min]="0.01"
+              [maxFractionDigits]="2"
+              [locale]="text.numberLocale()"
+              fluid
+            />
+          </div>
+          <div class="grid gap-2">
+            <label for="quota-unit">{{ text.t('unit') }}</label>
+            <p-select
+              inputId="quota-unit"
+              [options]="units"
+              [(ngModel)]="draft.unit"
+              appendTo="body"
+              fluid
+            />
+          </div>
+        </div>
+        <p class="text-xs text-muted">{{ text.t('unitsHint') }}</p>
+
+        <div class="grid gap-2">
+          <label for="quota-reason">
+            {{ text.t('reason') }}
+            <span class="text-red-700" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            pTextarea
+            id="quota-reason"
+            rows="3"
+            maxlength="200"
+            [(ngModel)]="draft.reason"
+            [placeholder]="text.t('reasonHint')"
+          ></textarea>
+        </div>
+      } @else {
+        <!-- ขั้นที่ 2: ตรวจทานก่อนยืนยัน -->
+        <dl class="grid gap-4 rounded-lg border border-zinc-200 p-4">
+          <div class="flex justify-between gap-3">
+            <dt>{{ text.t('change') }}</dt>
+            <dd class="font-semibold">
+              {{ delta() > 0 ? '+' : '' }}{{ text.formatData(delta()) }}
+            </dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt>{{ text.t('total') }} · {{ text.t('before') }}</dt>
+            <dd>{{ text.formatData(target.quotaMb) }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt>{{ text.t('total') }} · {{ text.t('after') }}</dt>
+            <dd class="font-semibold">{{ text.formatData(afterTotal(target)) }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt>{{ text.t('remaining') }} · {{ text.t('after') }}</dt>
+            <dd class="font-semibold">
+              {{ text.formatData(afterRemaining(target)) }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm text-muted">{{ text.t('reason') }}</dt>
+            <dd class="mt-1 break-words">{{ draft.reason }}</dd>
+          </div>
+        </dl>
+      }
+
+      @if (data.mutationError(); as apiError) {
+        <p-message severity="error" role="alert">{{ i18n.t(apiError) }}</p-message>
+      }
+      @if (error(); as validationError) {
+        <p-message severity="error" role="alert">{{ text.t(validationError) }}</p-message>
+      }
+
+      <div class="flex flex-wrap justify-end gap-2">
+        <p-button
+          [label]="text.t('cancel')"
+          [ariaLabel]="text.t('cancel')"
+          severity="secondary"
+          [text]="true"
+          (onClick)="visible.set(false)"
+        />
+        @if (step() === 'review') {
+          <p-button
+            [label]="text.t('continueEditing')"
+            [ariaLabel]="text.t('continueEditing')"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="step.set('edit')"
+          />
+          <p-button
+            [label]="text.t('confirm')"
+            [ariaLabel]="text.t('confirm')"
+            (onClick)="confirm()"
+            [loading]="data.busy()"
+            [disabled]="data.busy()"
+          />
+        } @else {
+          <p-button
+            [label]="text.t('review')"
+            [ariaLabel]="text.t('review')"
+            (onClick)="review()"
+          />
+        }
+      </div>
+    </div>
+  }
+</p-dialog>

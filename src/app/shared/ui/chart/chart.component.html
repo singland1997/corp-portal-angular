@@ -1,0 +1,12 @@
+<div class="relative w-full" [style.height.rem]="height() / 16">
+  <canvas
+    baseChart
+    [type]="type()"
+    [data]="data()"
+    [options]="responsiveOptions()"
+    role="img"
+    [attr.aria-label]="label()"
+  >
+    {{ label() }}
+  </canvas>
+</div>

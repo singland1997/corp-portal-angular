@@ -1,0 +1,59 @@
+import {
+  arrayOf,
+  bool,
+  dateText,
+  finiteNumber,
+  nullable,
+  objectOf,
+  oneOf,
+  optional,
+  text,
+} from '@core/api/response-validation';
+import { PORTAL_STATUSES } from '@shared/models/portal-status';
+
+export const poolsResponse = arrayOf(
+  objectOf({
+    id: text,
+    corporateId: text,
+    name: text,
+    corporate: text,
+    lot: nullable(text),
+    status: oneOf(['active', 'inactive']),
+    quotaMb: nullable(finiteNumber),
+    usedMb: nullable(finiteNumber),
+    createdAt: dateText,
+    createdBy: text,
+    updatedAt: dateText,
+    updatedBy: text,
+    sourceState: oneOf(['unlinked', 'partial', 'complete']),
+  }),
+);
+export const membersResponse = arrayOf(
+  objectOf({
+    id: text,
+    poolId: text,
+    mobile: text,
+    assignedTo: nullable(text),
+    department: nullable(text),
+    usedMb: nullable(finiteNumber),
+    status: nullable(oneOf(PORTAL_STATUSES)),
+  }),
+);
+export const transactionsResponse = arrayOf(
+  objectOf({
+    id: text,
+    poolId: text,
+    type: text,
+    occurredAt: nullable(dateText),
+    amountMb: nullable(finiteNumber),
+    totalAfterMb: nullable(finiteNumber),
+    remainingAfterMb: nullable(finiteNumber),
+    afterQuantityMb: optional(nullable(finiteNumber)),
+    performedBy: nullable(text),
+    reason: nullable(text),
+  }),
+);
+export const inventoryResponse = arrayOf(
+  objectOf({ id: text, poolId: text, name: nullable(text), status: optional(nullable(text)) }),
+);
+export const capabilitiesResponse = objectOf({ poolWrite: bool, quotaAdjust: bool });

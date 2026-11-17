@@ -1,0 +1,18 @@
+<div class="grid gap-2">
+  <label class="text-sm font-medium" [for]="inputId()">
+    {{ label() }}
+    @if (required()) {
+      <span class="text-red-700" aria-hidden="true">*</span>
+    }
+  </label>
+  <ng-content />
+  @if (error()) {
+    <small class="text-xs leading-relaxed text-red-700" [id]="inputId() + '-message'" role="alert">
+      {{ error() }}
+    </small>
+  } @else if (hint()) {
+    <small class="text-xs leading-relaxed text-muted" [id]="inputId() + '-message'">
+      {{ hint() }}
+    </small>
+  }
+</div>

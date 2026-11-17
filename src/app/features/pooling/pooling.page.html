@@ -1,0 +1,385 @@
+@if (data.resource.loading()) {
+  <cp-feedback-state kind="loading" />
+} @else if (data.resource.error(); as error) {
+  <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="data.resource.reload()" />
+} @else {
+  <div class="grid gap-6">
+    <cp-page-header [title]="t(detailMode() ? 'details' : 'title')">
+      @if (detailMode()) {
+        <p-button
+          [label]="t('back')"
+          [ariaLabel]="t('back')"
+          icon="pi pi-arrow-left"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="back()"
+        />
+      }
+      <p-button
+        [label]="t('create')"
+        [ariaLabel]="t('create')"
+        icon="pi pi-plus"
+        (onClick)="openForm()"
+      />
+    </cp-page-header>
+    @if (notice(); as message) {
+      <p-message severity="success" role="status">{{ t(message) }}</p-message>
+    }
+    @if (pool(); as selected) {
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          @if (!detailMode()) {
+            <p-select
+              inputId="selected-pool"
+              [ariaLabel]="t('pool')"
+              [options]="poolOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="selected.id"
+              (ngModelChange)="selectPool($event)"
+              appendTo="body"
+            />
+          } @else {
+            <h2 class="text-xl font-semibold">{{ selected.name }}</h2>
+          }
+          <cp-status-badge [status]="selected.status" />
+          <span class="text-sm text-muted">
+            {{ selected.corporate }} · {{ selected.lot ?? '—' }}
+          </span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <p-button
+            [label]="t('edit')"
+            [ariaLabel]="t('edit')"
+            icon="pi pi-pencil"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="openForm(selected)"
+          />
+          <p-button
+            [label]="t('increase')"
+            [ariaLabel]="t('increase')"
+            icon="pi pi-plus"
+            [disabled]="!canIncrease()"
+            (onClick)="openQuota('increase')"
+          />
+          <p-button
+            [label]="t('decrease')"
+            [ariaLabel]="t('decrease')"
+            icon="pi pi-minus"
+            severity="secondary"
+            [outlined]="true"
+            [disabled]="!canDecrease()"
+            (onClick)="openQuota('decrease')"
+          />
+        </div>
+      </div>
+      @if (selected.status === 'inactive') {
+        <p-message severity="info">{{ t('inactiveHint') }}</p-message>
+      }
+      @if (!quotaCommandAvailable()) {
+        <p-message severity="info">{{ i18n.t('commandUnavailable') }}</p-message>
+      }
+      @if (selected.sourceState === 'unlinked') {
+        <p-message severity="secondary">{{ t('sourceUnlinked') }}</p-message>
+      } @else if (selected.sourceState === 'partial') {
+        <p-message severity="warn">{{ t('sourcePartial') }}</p-message>
+      }
+      @if (overQuota()) {
+        <p-message severity="warn">
+          <strong>{{ t('overQuota') }}</strong>
+          <p class="mt-1">{{ t('overQuotaHint') }}</p>
+        </p-message>
+      }
+      <div class="grid gap-6 lg:grid-cols-5">
+        <section
+          class="rounded-xl bg-zinc-900 p-6 text-white lg:col-span-2"
+          [attr.aria-label]="t('overview')"
+        >
+          <p class="text-xs font-semibold tracking-wider text-yellow-300">{{ t('latest') }}</p>
+          <h2 class="mt-2 text-xl font-semibold">{{ t('overview') }}</h2>
+          @if (hasQuota()) {
+            <div class="my-4 flex items-center gap-6">
+              <div class="w-32 shrink-0">
+                <cp-chart
+                  type="doughnut"
+                  [data]="chartData()"
+                  [options]="chartOptions"
+                  [height]="128"
+                  [label]="
+                    t('used') +
+                    ' ' +
+                    formatData(selected.usedMb) +
+                    '; ' +
+                    t('remaining') +
+                    ' ' +
+                    formatData(remaining())
+                  "
+                />
+              </div>
+              <div>
+                <strong class="text-4xl font-semibold">
+                  {{ percent() === null ? '—' : percent() + '%' }}
+                </strong>
+                <p class="mt-2 text-sm text-zinc-300">{{ t('used') }}</p>
+              </div>
+            </div>
+          } @else {
+            <p class="my-8 text-zinc-300">{{ t('noQuota') }}</p>
+          }
+          <dl class="grid grid-cols-3 gap-3">
+            <div>
+              <dd class="font-semibold">{{ formatData(selected.usedMb) }}</dd>
+              <dt class="mt-1 text-xs text-zinc-300">{{ t('used') }}</dt>
+            </div>
+            <div>
+              <dd class="font-semibold" [class.text-red-300]="overQuota()">
+                {{ formatData(remaining()) }}
+              </dd>
+              <dt class="mt-1 text-xs text-zinc-300">{{ t('remaining') }}</dt>
+            </div>
+            <div>
+              <dd class="font-semibold">{{ formatData(selected.quotaMb) }}</dd>
+              <dt class="mt-1 text-xs text-zinc-300">{{ t('total') }}</dt>
+            </div>
+          </dl>
+        </section>
+        <cp-card [title]="t('byDepartment')" class="lg:col-span-3">
+          <div class="grid gap-6">
+            @for (department of departments(); track department.key) {
+              <div class="grid gap-2">
+                <div class="flex justify-between gap-4 text-sm">
+                  <span>{{ department.label }}</span>
+                  <strong>{{ formatData(department.used) }}</strong>
+                </div>
+                <p-progressbar
+                  [value]="departmentShare(department.used)"
+                  [showValue]="false"
+                  [ariaLabel]="department.label"
+                />
+              </div>
+            } @empty {
+              <p class="py-8 text-muted">{{ t('noDepartment') }}</p>
+            }
+          </div>
+        </cp-card>
+      </div>
+      @if (detailMode()) {
+        <cp-card [title]="t('details')">
+          <dl class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <dt class="text-xs text-muted">{{ t('pool') }}</dt>
+              <dd class="mt-1 break-all">{{ selected.id }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">{{ t('lot') }}</dt>
+              <dd class="mt-1">{{ selected.lot ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">{{ t('members') }}</dt>
+              <dd class="mt-1">{{ members().length | number }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">{{ t('createdAt') }}</dt>
+              <dd class="mt-1">{{ formatDate(selected.createdAt) }} · {{ selected.createdBy }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">{{ t('updatedAt') }}</dt>
+              <dd class="mt-1">{{ formatDate(selected.updatedAt) }} · {{ selected.updatedBy }}</dd>
+            </div>
+          </dl>
+          <div class="mt-5">
+            <p-button
+              [label]="t('inventory')"
+              [ariaLabel]="t('inventory')"
+              icon="pi pi-list"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="inventoryVisible.set(true)"
+            />
+          </div>
+        </cp-card>
+      }
+      <cp-card [title]="t('members')" [flush]="true">
+        <cp-data-table
+          [rows]="memberRows()"
+          [columns]="memberColumns()"
+          [actions]="memberActions()"
+          [label]="t('members')"
+          [searchPlaceholder]="t('searchMembers')"
+          (rowAction)="member.set($event.row)"
+        >
+          <p-select
+            table-filters
+            [ariaLabel]="t('department')"
+            [options]="departmentOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="department()"
+            (ngModelChange)="department.set($event)"
+            appendTo="body"
+          />
+        </cp-data-table>
+      </cp-card>
+      <cp-card [title]="t('transactions')">
+        <p class="mb-5 text-sm text-muted">{{ t('transactionHint') }}</p>
+        <div class="mb-5 flex flex-wrap items-end gap-3">
+          <div class="grid gap-2">
+            <label for="pool-from" class="text-sm">{{ t('from') }}</label>
+            <input
+              pInputText
+              id="pool-from"
+              type="date"
+              [ngModel]="from()"
+              (ngModelChange)="from.set($event)"
+            />
+          </div>
+          <div class="grid gap-2">
+            <label for="pool-to" class="text-sm">{{ t('to') }}</label>
+            <input
+              pInputText
+              id="pool-to"
+              type="date"
+              [ngModel]="to()"
+              (ngModelChange)="to.set($event)"
+            />
+          </div>
+          <p-select
+            [ariaLabel]="t('type')"
+            [options]="typeOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="transactionType()"
+            (ngModelChange)="transactionType.set($event)"
+            appendTo="body"
+          />
+          <p-button
+            [label]="t('clear')"
+            [ariaLabel]="t('clear')"
+            severity="secondary"
+            [text]="true"
+            (onClick)="clearTransactionFilters()"
+          />
+          <p-button
+            [label]="t('export')"
+            [ariaLabel]="t('export')"
+            icon="pi pi-download"
+            severity="secondary"
+            [outlined]="true"
+            [disabled]="invalidDates() || transactions().length === 0"
+            (onClick)="exportTransactions()"
+          />
+        </div>
+        @if (invalidDates()) {
+          <p-message severity="error" role="alert">{{ t('invalidDateRange') }}</p-message>
+        }
+        <cp-data-table
+          [rows]="transactionRows()"
+          [columns]="transactionColumns()"
+          [label]="t('transactions')"
+          [searchable]="false"
+        />
+      </cp-card>
+    } @else {
+      <p-message severity="error">{{ t('poolMissing') }}</p-message>
+      <p-button [label]="t('back')" [ariaLabel]="t('back')" (onClick)="back()" />
+    }
+    @if (!detailMode()) {
+      <cp-card [title]="t('poolList')" [flush]="true">
+        <cp-data-table
+          [rows]="pools()"
+          [columns]="poolColumns()"
+          [actions]="poolActions()"
+          [label]="t('poolList')"
+          [searchPlaceholder]="t('searchPools')"
+          (rowAction)="onPoolAction($event)"
+        >
+          <p-select
+            table-filters
+            [ariaLabel]="t('status')"
+            [options]="filterOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="filterStatus()"
+            (ngModelChange)="filterStatus.set($event)"
+            appendTo="body"
+          />
+        </cp-data-table>
+      </cp-card>
+    }
+  </div>
+
+  <cp-pool-form-dialog
+    [(visible)]="formVisible"
+    [pool]="editingPool()"
+    (saved)="notice.set('saved')"
+  />
+
+  <cp-quota-dialog
+    [(visible)]="quotaVisible"
+    [poolId]="quotaPoolId()"
+    [direction]="quotaDirection()"
+    (adjusted)="onQuotaAdjusted()"
+  />
+
+  <p-dialog
+    [visible]="inventoryVisible()"
+    (visibleChange)="inventoryVisible.set($event)"
+    [header]="t('inventory')"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closeAriaLabel]="t('close')"
+    [pt]="{ root: { class: 'w-[560px] max-w-[calc(100vw-2rem)]' } }"
+  >
+    @if (inventory().length) {
+      <cp-data-table [rows]="inventory()" [columns]="inventoryColumns()" [label]="t('inventory')" />
+    } @else {
+      <div class="grid gap-3 py-6 text-center">
+        <i class="pi pi-inbox text-3xl text-muted" aria-hidden="true"></i>
+        <h3 class="font-semibold">{{ t('inventoryEmpty') }}</h3>
+        <p class="text-sm text-muted">{{ t('inventoryHint') }}</p>
+      </div>
+    }
+    <div class="flex justify-end">
+      <p-button
+        [label]="t('close')"
+        [ariaLabel]="t('close')"
+        severity="secondary"
+        (onClick)="inventoryVisible.set(false)"
+      />
+    </div>
+  </p-dialog>
+  <p-dialog
+    [visible]="member() !== null"
+    (visibleChange)="!$event && member.set(null)"
+    [header]="t('details')"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closeAriaLabel]="t('close')"
+    [pt]="{ root: { class: 'w-[480px] max-w-[calc(100vw-2rem)]' } }"
+  >
+    @if (member(); as item) {
+      <dl class="grid gap-4">
+        <div>
+          <dt class="text-xs text-muted">{{ t('mobile') }}</dt>
+          <dd>{{ item.mobile }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">{{ t('assignedTo') }}</dt>
+          <dd>{{ item.assignedTo ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">{{ t('department') }}</dt>
+          <dd>{{ departmentLabel(item.department) }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">{{ t('dataUsed') }}</dt>
+          <dd>{{ formatData(item.usedMb, 'GB') }}</dd>
+        </div>
+        <cp-status-badge [status]="item.status" />
+      </dl>
+    }
+  </p-dialog>
+}

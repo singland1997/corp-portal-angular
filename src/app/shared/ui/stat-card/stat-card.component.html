@@ -1,0 +1,18 @@
+<p-card [pt]="{ root: { class: 'h-full border border-line' }, body: { class: 'p-4 sm:p-6' } }">
+  <div class="flex items-center justify-between gap-2 text-xs text-zinc-600">
+    <span>{{ label() }}</span>
+    <p-avatar
+      [icon]="'pi ' + icon()"
+      [pt]="{ root: { class: 'shrink-0 bg-brand-soft text-yellow-800' } }"
+    />
+  </div>
+  <div class="mt-4 mb-2 text-3xl font-semibold tracking-tight">
+    @if (value() === null) {
+      —
+    } @else {
+      {{ value() }}
+      <span class="ml-1.5 text-sm font-normal tracking-normal text-muted">{{ unit() }}</span>
+    }
+  </div>
+  <!--  <p class="text-xs leading-relaxed text-muted">{{ hint() }}</p>-->
+</p-card>

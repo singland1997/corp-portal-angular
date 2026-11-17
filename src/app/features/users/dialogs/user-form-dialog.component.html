@@ -1,0 +1,200 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [header]="t(isEdit() ? 'editUser' : 'createUser')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeAriaLabel]="t('close')"
+  [pt]="{ root: { class: 'w-[560px] max-w-[calc(100vw-2rem)]' } }"
+>
+  <form class="grid gap-5" (ngSubmit)="submit()">
+    <!-- ประเภทผู้ใช้: เลือกได้ตอนสร้างเท่านั้น -->
+    <div class="grid gap-2">
+      <span id="user-type-label">
+        {{ t('userType') }}
+        <span class="text-red-700" aria-hidden="true">*</span>
+      </span>
+      <p-selectbutton
+        name="userType"
+        [options]="typeOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="draft.userType"
+        [disabled]="isEdit()"
+        [allowEmpty]="false"
+        ariaLabelledBy="user-type-label"
+      />
+    </div>
+
+    @if (draft.userType === 'corporate') {
+      <div class="grid gap-2">
+        <label for="user-corporate">
+          {{ t('corporate') }}
+          <span class="text-red-700" aria-hidden="true">*</span>
+        </label>
+        <p-select
+          inputId="user-corporate"
+          name="corporateId"
+          [(ngModel)]="draft.corporateId"
+          [options]="corporate.options()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          fluid
+        />
+        <p class="text-xs text-muted">{{ t('corporateRoleHint') }}</p>
+      </div>
+    }
+
+    <div class="grid gap-2">
+      <label for="user-name">
+        {{ t('name') }}
+        <span class="text-red-700" aria-hidden="true">*</span>
+      </label>
+      <input
+        pInputText
+        id="user-name"
+        name="fullName"
+        [(ngModel)]="draft.fullName"
+        maxlength="120"
+        required
+      />
+    </div>
+
+    <div class="grid gap-2">
+      <label for="user-email">
+        {{ t('email') }}
+        <span class="text-red-700" aria-hidden="true">*</span>
+      </label>
+      <input
+        pInputText
+        id="user-email"
+        name="email"
+        type="email"
+        [(ngModel)]="draft.email"
+        [readonly]="isEdit()"
+        maxlength="254"
+        required
+      />
+    </div>
+
+    @if (draft.userType === 'platform') {
+      <div class="grid gap-2">
+        <label for="user-role">
+          {{ t('role') }}
+          <span class="text-red-700" aria-hidden="true">*</span>
+        </label>
+        <p-select
+          inputId="user-role"
+          name="role"
+          [(ngModel)]="draft.role"
+          [options]="roleOptions()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          fluid
+        />
+      </div>
+    }
+
+    @if (draft.userType === 'platform' && draft.role === 'sales') {
+      <div class="grid min-w-0 gap-2">
+        <label for="sales-corporates">
+          {{ t('salesCorporates') }}
+          <span class="text-red-700" aria-hidden="true">*</span>
+        </label>
+        <p-multiselect
+          inputId="sales-corporates"
+          name="corporateIds"
+          [(ngModel)]="draft.corporateIds"
+          [options]="salesCorporateOptions()"
+          optionLabel="label"
+          optionValue="value"
+          optionDisabled="disabled"
+          display="chip"
+          [pt]="{
+            root: { class: 'min-w-0' },
+            labelContainer: { class: 'min-w-0' },
+            label: { class: 'flex-wrap' },
+            pcChip: { root: { class: 'max-w-full' }, label: { class: 'truncate' } },
+          }"
+          [filter]="true"
+          [showClear]="true"
+          [showToggleAll]="false"
+          [placeholder]="t('selectCorporates')"
+          appendTo="body"
+          fluid
+        />
+      </div>
+    }
+
+    @if (isEdit()) {
+      <div class="grid gap-2">
+        <label for="user-status">
+          {{ t('status') }}
+          <span class="text-red-700" aria-hidden="true">*</span>
+        </label>
+        <p-select
+          inputId="user-status"
+          name="status"
+          [(ngModel)]="draft.status"
+          [options]="statusOptions()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          fluid
+        />
+        @if (user()?.status === 'pending') {
+          <p class="text-xs text-muted">{{ t('noPasswordHint') }}</p>
+        }
+      </div>
+
+      <!-- ผู้ใช้ยังไม่ตั้งรหัสผ่าน: ออกลิงก์ใหม่ได้ (ลิงก์เดิมจะใช้ไม่ได้) -->
+      @if (user()?.status === 'pending') {
+        <div class="grid gap-3 rounded-lg border border-line p-4">
+          @if (invite(); as link) {
+            <cp-invite-link [invite]="link" />
+          } @else {
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <p class="text-sm text-muted">{{ t('newInviteHint') }}</p>
+              <p-button
+                type="button"
+                [label]="t('newInvite')"
+                icon="pi pi-link"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="busy()"
+                (onClick)="createInvite()"
+              />
+            </div>
+          }
+        </div>
+      }
+      <p class="text-sm text-muted">{{ t('typeLocked') }}</p>
+    } @else {
+      <p class="text-sm text-muted">{{ t('pendingHint') }}</p>
+    }
+
+    @if (error(); as message) {
+      <p-message severity="error" role="alert">{{ message }}</p-message>
+    }
+
+    <div class="flex justify-end gap-2">
+      <p-button
+        [label]="t('cancel')"
+        [ariaLabel]="t('cancel')"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="visible.set(false)"
+      />
+      <p-button
+        type="submit"
+        [loading]="busy()"
+        [disabled]="busy()"
+        [label]="t(isEdit() ? 'save' : 'createUser')"
+        [ariaLabel]="t(isEdit() ? 'save' : 'createUser')"
+      />
+    </div>
+  </form>
+</p-dialog>
