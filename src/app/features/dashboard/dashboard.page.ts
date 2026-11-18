@@ -1,19 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { corporateResource } from '@core/api/corporate-resource';
-import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { CardComponent } from '@shared/ui/card/card.component';
-import { MeterComponent } from '@shared/ui/meter/meter.component';
+import { DialogModule } from 'primeng/dialog';
 import { ChartComponent } from '@shared/ui/chart/chart.component';
 import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
-import { StatCardComponent } from '@shared/ui/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { formatDataSize, MB_PER_TB } from '@shared/utils/data-size';
 import { createUsageChartData, USAGE_CHART_OPTIONS } from './dashboard.charts';
 import { DashboardRepository } from './data-access/dashboard.repository';
-import { isKnownOperation, SimActivity } from './dashboard.models';
+import { DashboardSnapshot, isKnownOperation, SimActivity } from './dashboard.models';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,15 +25,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
     ChartComponent,
     FeedbackStateComponent,
     PageHeaderComponent,
-    StatCardComponent,
     StatusBadgeComponent,
-    MeterComponent,
+    DialogModule,
   ],
   templateUrl: './dashboard.page.html',
 })
 export class DashboardPage {
   readonly i18n = inject(LocaleService);
-  readonly corporate = inject(CorporateContext);
   private readonly repository = inject(DashboardRepository);
 
   /** โหลดใหม่อัตโนมัติเมื่อเปลี่ยนองค์กร */
@@ -44,13 +40,6 @@ export class DashboardPage {
 
   // ---- ตัวเลขสรุป ----
 
-  readonly numberCounts = computed(() => ({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    suspended: 0,
-    ...this.snapshot()?.numbers,
-  }));
   /** Pool values stay unknown (null) unless the API reports both quantities. */
   readonly poolKnown = computed(() => {
     const pool = this.snapshot()?.pool;
@@ -68,31 +57,70 @@ export class DashboardPage {
       ? '—'
       : formatDataSize(tb * MB_PER_TB, this.i18n.locale());
   }
-  readonly poolPercentage = computed(() => {
-    const pool = this.poolKnown();
-    return pool && pool.quotaTb > 0 ? Math.round((pool.usedTb / pool.quotaTb) * 100) : null;
-  });
   /** Known days only; unknown days are never counted as 0. */
   readonly knownDays = computed(() =>
     (this.snapshot()?.dailyUsageGb ?? []).filter((n): n is number => n !== null),
   );
-  readonly totalWeekUsageGb = computed(() =>
-    this.knownDays().length
-      ? Math.round(this.knownDays().reduce((sum, n) => sum + n, 0) * 100) / 100
-      : null,
-  );
-
-  // ---- วันที่ ----
-
-  /** วันที่ข้อมูลอัปเดตล่าสุด (`updatedAt` จาก API) ตามเวลาประเทศไทย */
-  readonly updatedLabel = computed(() => {
-    const updatedAt = this.snapshot()?.updatedAt;
-    if (!updatedAt) return '';
-    return new Intl.DateTimeFormat(this.i18n.locale() === 'th' ? 'th-TH-u-ca-gregory' : 'en-GB', {
-      timeZone: 'Asia/Bangkok',
-      dateStyle: 'medium',
-    }).format(new Date(updatedAt));
+  readonly selected = linkedSignal<DashboardSnapshot | null | undefined, SimActivity | null>({
+    source: this.snapshot,
+    computation: () => null,
   });
+  readonly activityColumns = [
+    'mobile',
+    'simOperation',
+    'activityTimestamp',
+    'status',
+    'actions',
+  ] as const;
+  readonly stats = computed(() => {
+    const data = this.snapshot();
+    if (!data) return [];
+    const fmt = new Intl.NumberFormat(this.i18n.locale());
+    return [
+      {
+        label: 'assignedLines',
+        value: fmt.format(data.numbers.total),
+        hint: fmt.format(data.numbers.active) + ' ' + this.i18n.t('active'),
+        desktop: false,
+      },
+      {
+        label: 'inactive',
+        value: fmt.format(data.numbers.inactive),
+        hint: this.i18n.t('inactiveLines'),
+        desktop: true,
+      },
+      {
+        label: 'suspended',
+        value: fmt.format(data.numbers.suspended),
+        hint: this.i18n.t('restrictedLines'),
+        desktop: true,
+      },
+      {
+        label: 'totalUsage',
+        value: this.poolAmount(data.totalUsageTb),
+        hint: this.i18n.t('usageSince') + ' ' + this.periodStartLabel(),
+        desktop: false,
+      },
+    ] as const;
+  });
+  readonly percent = computed(() => {
+    const p = this.poolKnown();
+    return p && p.quotaTb > 0 ? Math.round((p.usedTb / p.quotaTb) * 100) : null;
+  });
+  readonly ringFill = computed(() => {
+    const percent = this.percent();
+    return percent === null
+      ? '#52525b'
+      : 'conic-gradient(#facc15 ' + Math.min(Math.max(percent, 0), 100) + '%, #52525b 0)';
+  });
+  readonly poolMetrics = computed(
+    () =>
+      [
+        { label: 'used', value: this.snapshot()?.pool.usedTb },
+        { label: 'remaining', value: this.remainingTb() },
+        { label: 'allocationQuota', value: this.snapshot()?.pool.quotaTb },
+      ] as const,
+  );
 
   /** ป้ายแกน x ของกราฟรายวัน นับจาก `periodStart` ทีละวัน */
   readonly dailyLabels = computed(() => {
@@ -112,7 +140,20 @@ export class DashboardPage {
 
   // ---- กราฟ ----
 
-  readonly lineOptions = USAGE_CHART_OPTIONS;
+  readonly dailyRange = computed(() =>
+    this.dailyLabels().length ? [this.dailyLabels()[0], this.dailyLabels().at(-1)].join(' – ') : '',
+  );
+  readonly periodStartLabel = computed(() => {
+    const start = this.snapshot()?.periodStart;
+    return start
+      ? new Intl.DateTimeFormat(this.i18n.locale(), {
+          day: 'numeric',
+          month: 'short',
+          timeZone: 'UTC',
+        }).format(new Date(start + 'T00:00:00Z'))
+      : '—';
+  });
+  readonly chartOptions = USAGE_CHART_OPTIONS;
 
   readonly usageData = computed(() =>
     createUsageChartData(

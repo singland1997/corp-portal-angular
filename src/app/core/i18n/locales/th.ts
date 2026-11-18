@@ -1,6 +1,23 @@
 import { TranslationKey } from '../translation.models';
 
 export const th: Record<TranslationKey, string> = {
+  networkOverview: 'ภาพรวมเครือข่าย',
+  assignedLines: 'เลขหมายทั้งหมด',
+  inactiveLines: 'เลขหมายที่ไม่ได้ใช้งาน',
+  restrictedLines: 'ถูกระงับบริการ',
+  gbPerDay: 'GB / วัน',
+  poolAllocation: 'โควตาที่จัดสรรปัจจุบัน',
+  poolFraction: 'ของโควตารวมที่ใช้ไป',
+  allocationQuota: 'โควตา',
+  simOperation: 'การดำเนินการ',
+  activityTimestamp: 'เวลา · ICT',
+  dailyVolume: 'ปริมาณดาต้ารายวัน',
+  reportedDays: 'วันที่มีข้อมูล',
+  dailyValues: 'ดูยอดรายวัน',
+  noUsageInPeriod: 'ยังไม่มีข้อมูลการใช้งานในช่วงนี้',
+  usageSince: 'ยอดสะสมตั้งแต่',
+  poolsExcluded: 'จำนวนพูลที่ไม่มียอดให้คำนวณ',
+  snapshotUpdated: 'อัปเดตเมื่อ',
   productName: 'ผลิตภัณฑ์',
   corporateQuota: 'โควตาองค์กร',
   lotQuotaType: 'ประเภทโควตา',

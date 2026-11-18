@@ -13,14 +13,14 @@ export function createUsageChartData(
       {
         label: usedLabel,
         data: [...values],
+        backgroundColor: PORTAL_COLORS.primarySoft,
         borderColor: PORTAL_COLORS.primaryActive,
-        backgroundColor: `${PORTAL_COLORS.primarySoft}80`,
-        fill: true,
-        tension: 0.35,
-        pointRadius: 3,
-        pointBackgroundColor: PORTAL_COLORS.primaryHover,
         borderWidth: 2,
-        // Unknown days are gaps, not zero.
+        fill: true,
+        tension: 0,
+        pointRadius:
+          values.filter((v) => v !== null).length === values.length && values.length > 1 ? 0 : 3,
+        pointHitRadius: 9,
         spanGaps: false,
       },
     ],
@@ -33,6 +33,8 @@ export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
   plugins: {
     legend: { display: false },
     tooltip: {
+      displayColors: false,
+      padding: 12,
       callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y} GB` },
     },
   },
@@ -44,7 +46,7 @@ export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
     },
     y: {
       beginAtZero: true,
-      grid: { color: PORTAL_COLORS.subtle },
+      grid: { color: PORTAL_COLORS.border, drawTicks: false },
       ticks: { color: PORTAL_COLORS.muted, maxTicksLimit: 5, callback: (value) => `${value} GB` },
       border: { display: false },
     },

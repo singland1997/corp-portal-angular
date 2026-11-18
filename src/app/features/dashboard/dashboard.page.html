@@ -2,129 +2,155 @@
   <cp-feedback-state kind="loading" />
 } @else if (resource.error(); as error) {
   <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="resource.reload()" />
-} @else {
-  @if (snapshot(); as snapshot) {
-    <div class="grid gap-4 md:gap-6">
-      <cp-page-header [title]="i18n.t('dashboard')">
-        <span
-          class="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-xs text-zinc-600"
+} @else if (snapshot(); as data) {
+  <div class="grid gap-4 md:gap-6">
+    <cp-page-header [title]="i18n.t('networkOverview')">
+      <span class="rounded-lg border border-line bg-white px-4 py-2 text-xs font-medium">
+        {{ periodStartLabel() }} – {{ dailyLabels().at(-1) }}
+      </span>
+    </cp-page-header>
+    <section
+      [attr.aria-label]="i18n.t('dashboard')"
+      class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4"
+    >
+      @for (stat of stats(); track stat.label) {
+        <div
+          [class.hidden]="stat.desktop"
+          [class.md:block]="stat.desktop"
+          class="min-w-0 rounded-xl border border-line bg-white p-5 lg:p-6"
         >
-          <i class="pi pi-calendar" aria-hidden="true"></i>
-          {{ updatedLabel() }}
-        </span>
-      </cp-page-header>
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <cp-stat-card
-          [label]="i18n.t('totalNumbers')"
-          [value]="numberCounts().total"
-          [hint]="numberCounts().active + ' ' + i18n.t('active')"
-          icon="pi-mobile"
-        />
-        <cp-stat-card
-          [label]="i18n.t('active')"
-          [value]="numberCounts().active"
-          [hint]="
-            numberCounts().inactive +
-            ' ' +
-            i18n.t('inactive') +
-            ' · ' +
-            numberCounts().suspended +
-            ' ' +
-            i18n.t('suspended')
-          "
-          icon="pi-check-circle"
-        />
-        <cp-stat-card
-          [label]="i18n.t('totalUsage')"
-          [value]="snapshot.totalUsageTb"
-          unit="TB"
-          [hint]="updatedLabel()"
-          icon="pi-chart-line"
-        />
-        <cp-stat-card
-          [label]="i18n.t('poolUsage')"
-          [value]="poolPercentage()"
-          unit="%"
-          [hint]="(snapshot.pool.usedTb ?? '—') + ' / ' + (snapshot.pool.quotaTb ?? '—') + ' TB'"
-          icon="pi-database"
-        />
-      </div>
-      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
-        <cp-card [title]="i18n.t('dataTrend')" [subtitle]="i18n.t('dataTrendHint')">
-          @if (knownDays().length) {
-            <cp-chart
-              type="line"
-              [data]="usageData()"
-              [options]="lineOptions"
-              [label]="usageChartLabel()"
-            />
-          } @else {
-            <cp-feedback-state kind="empty" [description]="i18n.t('unknown')" />
-          }
-          <div class="mt-5 flex flex-wrap justify-between gap-3 text-xs text-muted">
-            <span>{{ updatedLabel() }}</span>
-            <strong class="font-medium text-zinc-600">
-              {{ totalWeekUsageGb() ?? '—' }} GB · {{ knownDays().length }}/{{
-                snapshot.dailyUsageGb.length
-              }}
-              {{ i18n.t('days') }}
-            </strong>
-          </div>
-        </cp-card>
-        <cp-card [title]="i18n.t('poolTitle')" [subtitle]="corporate.current()?.lotId ?? ''">
-          <cp-meter
-            class="mt-2"
-            [value]="snapshot.pool.usedTb"
-            [max]="snapshot.pool.quotaTb"
-            [label]="i18n.t('poolUsage')"
-            [overLabel]="i18n.t('overLimit')"
-            [locale]="i18n.locale() === 'th' ? 'th-TH' : 'en-US'"
-          />
-          <div class="mt-5 grid gap-3 text-xs">
-            <div class="flex items-center gap-2">
-              <span class="size-2 rounded-sm bg-yellow-600"></span>
-              {{ i18n.t('used') }}
-              <strong class="ml-auto">{{ poolAmount(snapshot.pool.usedTb) }}</strong>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="size-2 rounded-sm bg-brand-soft ring-1 ring-yellow-200"></span>
-              {{ i18n.t('remaining') }}
-              <strong class="ml-auto">
-                {{ poolAmount(remainingTb()) }}
-              </strong>
-            </div>
-          </div>
-        </cp-card>
-      </div>
-      <cp-card [title]="i18n.t('recent')" [subtitle]="i18n.t('activityHint')">
-        <a card-actions routerLink="/corporate" class="flex items-center gap-2 text-xs font-medium">
-          {{ i18n.t('viewAll') }}
-          <i class="pi pi-arrow-right" aria-hidden="true"></i>
-        </a>
-        <div class="grid divide-y divide-line">
-          @if (snapshot.activityComplete === false) {
-            <p class="pb-3 text-xs text-muted" role="note">{{ i18n.t('activityPartial') }}</p>
-          }
-          @for (item of snapshot.activity; track $index) {
-            <div class="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
-              <span
-                class="grid size-9 shrink-0 place-items-center rounded-lg bg-zinc-100 text-muted"
-              >
-                <i class="pi pi-history" aria-hidden="true"></i>
-              </span>
-              <div class="grid min-w-0 flex-1 gap-1 text-xs">
-                <strong class="font-medium">{{ operationLabel(item) }}</strong>
-                <span class="text-xs text-muted">
-                  {{ item.mobile ?? '—' }} · {{ activityTime(item.time) }}
-                </span>
-              </div>
-              <cp-status-badge [status]="item.status" />
-            </div>
-          } @empty {
-            <cp-feedback-state kind="empty" />
-          }
+          <p class="text-xs font-semibold tracking-wide text-muted uppercase">
+            {{ i18n.t(stat.label) }}
+          </p>
+          <strong class="my-2 block text-2xl font-semibold tracking-tight tabular-nums lg:text-3xl">
+            {{ stat.value }}
+          </strong>
+          <p class="text-sm text-muted">{{ stat.hint }}</p>
         </div>
+      }
+    </section>
+    <div class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.58fr)_minmax(0,1fr)]">
+      <cp-card [title]="i18n.t('dailyVolume')" [subtitle]="dailyRange()">
+        <span card-actions class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium">
+          {{ i18n.t('gbPerDay') }}
+        </span>
+        @if (knownDays().length) {
+          <cp-chart
+            type="line"
+            [height]="175"
+            [data]="usageData()"
+            [options]="chartOptions"
+            [label]="usageChartLabel()"
+          />
+        } @else {
+          <p class="grid min-h-44 place-items-center text-sm text-muted">
+            {{ i18n.t('noUsageInPeriod') }}
+          </p>
+        }
       </cp-card>
+      <section class="grid content-start gap-4 rounded-xl bg-zinc-800 p-5 text-white sm:p-6">
+        <a
+          routerLink="/pooling"
+          class="w-fit text-xs font-semibold tracking-wider text-yellow-300 uppercase hover:underline"
+        >
+          {{ i18n.t('poolTitle') }}
+        </a>
+        <h2 class="text-xl font-semibold">{{ i18n.t('poolAllocation') }}</h2>
+        <div class="flex flex-wrap items-center gap-4">
+          <div
+            aria-hidden="true"
+            class="grid size-24 shrink-0 place-items-center rounded-full sm:size-28 xl:size-32"
+            [style.background]="ringFill()"
+          >
+            <div class="size-3/4 rounded-full bg-zinc-800"></div>
+          </div>
+          <div>
+            <strong class="text-4xl font-semibold tabular-nums">
+              {{ percent() === null ? '—' : percent() + '%' }}
+            </strong>
+            <p class="mt-1 text-xs text-zinc-200">{{ i18n.t('poolFraction') }}</p>
+          </div>
+        </div>
+        <dl class="grid grid-cols-3 gap-2">
+          @for (metric of poolMetrics(); track metric.label) {
+            <div>
+              <dd class="text-base font-semibold tabular-nums">{{ poolAmount(metric.value) }}</dd>
+              <dt class="mt-1 text-xs text-zinc-300">{{ i18n.t(metric.label) }}</dt>
+            </div>
+          }
+        </dl>
+        @if (data.pool.unknownPools) {
+          <p class="text-xs text-zinc-300">
+            {{ i18n.t('poolsExcluded') }} {{ data.pool.unknownPools }}
+          </p>
+        }
+      </section>
     </div>
-  }
+    <cp-card [title]="i18n.t('recent')" [flush]="true">
+      @if (data.activityComplete === false) {
+        <p class="px-5 py-2 text-xs text-muted">{{ i18n.t('activityPartial') }}</p>
+      }
+      @if (data.activity.length) {
+        <table class="w-full text-left text-sm">
+          <thead
+            class="hidden border-y border-line bg-zinc-50 text-xs text-muted md:table-header-group"
+          >
+            <tr>
+              @for (label of activityColumns; track label) {
+                <th class="px-4 py-3 font-medium">{{ i18n.t(label) }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            @for (item of data.activity; track $index) {
+              <tr>
+                <td class="px-4 py-4 md:hidden">
+                  <button class="grid gap-1 text-left" (click)="selected.set(item)">
+                    <strong>{{ operationLabel(item) }}</strong>
+                    <span class="text-xs text-muted">{{ item.mobile ?? '—' }}</span>
+                  </button>
+                </td>
+                <td class="hidden px-4 py-3 md:table-cell">{{ item.mobile ?? '—' }}</td>
+                <td class="hidden px-4 py-3 md:table-cell">{{ operationLabel(item) }}</td>
+                <td class="hidden px-4 py-3 md:table-cell">{{ activityTime(item.time) }}</td>
+                <td class="px-4 py-3"><cp-status-badge [status]="item.status" /></td>
+                <td class="hidden px-4 py-3 md:table-cell">
+                  <button
+                    class="grid size-9 place-items-center rounded-lg border border-line hover:bg-zinc-50"
+                    [attr.aria-label]="i18n.t('details') + ' · ' + operationLabel(item)"
+                    (click)="selected.set(item)"
+                  >
+                    <img src="images/dashboard-details.svg" alt="" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <cp-feedback-state kind="empty" />
+      }
+    </cp-card>
+  </div>
+  <p-dialog
+    [visible]="selected() !== null"
+    (visibleChange)="!$event && selected.set(null)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [header]="i18n.t('details')"
+  >
+    @if (selected(); as item) {
+      <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-4 text-sm">
+        <dt>{{ i18n.t('mobile') }}</dt>
+        <dd>{{ item.mobile ?? '—' }}</dd>
+        <dt>{{ i18n.t('simOperation') }}</dt>
+        <dd>{{ operationLabel(item) }}</dd>
+        <dt>{{ i18n.t('activityTimestamp') }}</dt>
+        <dd>{{ activityTime(item.time) }}</dd>
+        <dt>{{ i18n.t('status') }}</dt>
+        <dd><cp-status-badge [status]="item.status" /></dd>
+      </dl>
+    }
+  </p-dialog>
 }

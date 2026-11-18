@@ -18,6 +18,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
+import { TabsModule } from 'primeng/tabs';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { CardComponent } from '@shared/ui/card/card.component';
@@ -43,7 +44,7 @@ const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
 
 /**
  * หน้า Data Pool มี 2 โหมดตาม query `?pool=<id>`
- * - ไม่มี `pool` → รายการ pool + สรุป pool ที่เลือก
+ * - ไม่มี `pool` → รายการ pool
  * - มี `pool`   → รายละเอียด pool นั้น
  *
  * Dialog สร้าง/แก้ pool และปรับโควตาแยกอยู่ใน `dialogs/`
@@ -61,6 +62,7 @@ const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
     MessageModule,
     ProgressBarModule,
     SelectModule,
+    TabsModule,
     CardComponent,
     ChartComponent,
     DataTableComponent,
@@ -86,12 +88,9 @@ export class PoolingPage {
   // ---- pool ที่เลือก ----
 
   readonly detailMode = computed(() => this.params().has('pool'));
-  readonly selectedPoolId = signal('');
-  /** ลำดับการเลือก: `?pool=` ใน URL → pool ที่คลิก → pool แรก */
-  readonly pool = computed(() => {
-    const id = this.params().get('pool') ?? (this.selectedPoolId() || this.data.pools()[0]?.id);
-    return this.data.pools().find((p) => p.id === id) ?? null;
-  });
+  readonly pool = computed(
+    () => this.data.pools().find((p) => p.id === this.params().get('pool')) ?? null,
+  );
   /** `null` when the pool quantity is unknown (never computed as 0). */
   readonly remaining = computed(() => {
     const p = this.pool();
@@ -105,7 +104,7 @@ export class PoolingPage {
   });
   readonly hasQuota = computed(() => {
     const p = this.pool();
-    return !!p && ((p.quotaMb ?? 0) > 0 || (p.usedMb ?? 0) > 0);
+    return !!p && p.usedMb !== null && p.quotaMb !== null && (p.quotaMb > 0 || p.usedMb > 0);
   });
   readonly overQuota = computed(() => (this.remaining() ?? 0) < 0);
   /** Quota changes need the upstream command API and a known current quota. */
@@ -152,9 +151,6 @@ export class PoolingPage {
     { value: 'all', label: this.t('allTypes') },
     ...(['increase', 'decrease'] as const).map((value) => ({ value, label: this.t(value) })),
   ]);
-  readonly poolOptions = computed(() =>
-    this.data.pools().map((p) => ({ label: this.poolName(p), value: p.id })),
-  );
 
   // ---- ข้อมูลในตาราง ----
 
@@ -165,10 +161,11 @@ export class PoolingPage {
       .map((p) => ({
         ...p,
         name: this.poolName(p),
-        total: this.formatData(p.quotaMb),
-        remaining: this.formatData(
-          p.quotaMb !== null && p.usedMb !== null ? p.quotaMb - p.usedMb : null,
-        ),
+        remainingMb: p.quotaMb !== null && p.usedMb !== null ? p.quotaMb - p.usedMb : null,
+        utilization:
+          p.quotaMb !== null && p.quotaMb > 0 && p.usedMb !== null
+            ? (p.usedMb / p.quotaMb) * 100
+            : null,
       })),
   );
 
@@ -233,8 +230,10 @@ export class PoolingPage {
     { field: 'name', header: this.t('poolName'), sortable: true },
     { field: 'lot', header: this.t('lot') },
     { field: 'memberCount', header: this.t('members'), sortable: true },
-    { field: 'total', header: this.t('total') },
-    { field: 'remaining', header: this.t('remaining') },
+    { field: 'usedMb', header: this.t('used'), sortable: true },
+    { field: 'remainingMb', header: this.t('remaining'), sortable: true },
+    { field: 'utilization', header: this.t('utilization'), sortable: true },
+    { field: 'quotaMb', header: this.t('total'), sortable: true },
     { field: 'status', header: this.t('status'), type: 'status', sortable: true },
   ]);
   readonly memberColumns = computed<TableColumn<ReturnType<typeof this.memberRows>[number]>[]>(
@@ -289,8 +288,13 @@ export class PoolingPage {
   readonly chartOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '72%',
-    plugins: { legend: { display: false } },
+    cutout: '75%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: (context) => context.label + ' · ' + this.formatData(context.parsed) },
+      },
+    },
   };
 
   // ---- dialog และข้อความแจ้ง ----
@@ -343,16 +347,11 @@ export class PoolingPage {
 
   // ---- การเลือกและนำทาง ----
 
-  selectPool(id: string): void {
-    this.selectedPoolId.set(id);
+  /** ปุ่มในตาราง pool: ดูรายละเอียด (pool มาจาก CRM แก้ไขใน Portal ไม่ได้) */
+  onPoolAction(event: TableActionEvent<DataPool>): void {
     this.clearTransactionFilters();
     this.department.set('all');
     this.notice.set(null);
-  }
-
-  /** ปุ่มในตาราง pool: ดูรายละเอียด (pool มาจาก CRM แก้ไขใน Portal ไม่ได้) */
-  onPoolAction(event: TableActionEvent<DataPool>): void {
-    this.selectPool(event.row.id);
     this.setPoolQuery(event.row.id);
   }
 
@@ -397,7 +396,6 @@ export class PoolingPage {
   }
 
   private resetForCorporate(): void {
-    this.selectedPoolId.set('');
     this.quotaVisible.set(false);
     this.inventoryVisible.set(false);
     this.member.set(null);
