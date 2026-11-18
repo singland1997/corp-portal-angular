@@ -27,24 +27,6 @@ export function createUsageChartData(
   };
 }
 
-export function createPoolChartData(
-  usedTb: number,
-  remainingTb: number,
-  labels: string[],
-): ChartData<'doughnut'> {
-  return {
-    labels,
-    datasets: [
-      {
-        data: [usedTb, remainingTb],
-        backgroundColor: [PORTAL_COLORS.primary, PORTAL_COLORS.subtle],
-        borderWidth: 0,
-        hoverOffset: 2,
-      },
-    ],
-  };
-}
-
 export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
@@ -63,18 +45,8 @@ export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
     y: {
       beginAtZero: true,
       grid: { color: PORTAL_COLORS.subtle },
-      ticks: { color: PORTAL_COLORS.muted, callback: (value) => `${value} GB` },
+      ticks: { color: PORTAL_COLORS.muted, maxTicksLimit: 5, callback: (value) => `${value} GB` },
       border: { display: false },
     },
-  },
-};
-
-export const POOL_CHART_OPTIONS: ChartOptions<'doughnut'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  cutout: '78%',
-  plugins: {
-    legend: { display: false },
-    tooltip: { callbacks: { label: (context) => `${context.label}: ${context.parsed} TB` } },
   },
 };

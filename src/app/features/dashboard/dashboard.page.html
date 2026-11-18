@@ -13,7 +13,7 @@
           {{ updatedLabel() }}
         </span>
       </cp-page-header>
-      <div class="grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <cp-stat-card
           [label]="i18n.t('totalNumbers')"
           [value]="numberCounts().total"
@@ -51,12 +51,16 @@
       </div>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
         <cp-card [title]="i18n.t('dataTrend')" [subtitle]="i18n.t('dataTrendHint')">
-          <cp-chart
-            type="line"
-            [data]="usageData()"
-            [options]="lineOptions"
-            [label]="usageChartLabel()"
-          />
+          @if (knownDays().length) {
+            <cp-chart
+              type="line"
+              [data]="usageData()"
+              [options]="lineOptions"
+              [label]="usageChartLabel()"
+            />
+          } @else {
+            <cp-feedback-state kind="empty" [description]="i18n.t('unknown')" />
+          }
           <div class="mt-5 flex flex-wrap justify-between gap-3 text-xs text-muted">
             <span>{{ updatedLabel() }}</span>
             <strong class="font-medium text-zinc-600">
@@ -68,36 +72,25 @@
           </div>
         </cp-card>
         <cp-card [title]="i18n.t('poolTitle')" [subtitle]="corporate.current()?.lotId ?? ''">
-          @if (poolData(); as data) {
-            <div class="relative">
-              <cp-chart
-                type="doughnut"
-                [data]="data"
-                [options]="donutOptions"
-                [height]="210"
-                [label]="poolChartLabel()"
-              />
-              <div
-                class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1"
-              >
-                <strong class="text-3xl font-semibold">{{ poolPercentage() ?? '—' }}%</strong>
-                <span class="text-xs text-muted">{{ i18n.t('used') }}</span>
-              </div>
-            </div>
-          } @else {
-            <cp-feedback-state kind="empty" [description]="i18n.t('unknown')" />
-          }
+          <cp-meter
+            class="mt-2"
+            [value]="snapshot.pool.usedTb"
+            [max]="snapshot.pool.quotaTb"
+            [label]="i18n.t('poolUsage')"
+            [overLabel]="i18n.t('overLimit')"
+            [locale]="i18n.locale() === 'th' ? 'th-TH' : 'en-US'"
+          />
           <div class="mt-5 grid gap-3 text-xs">
             <div class="flex items-center gap-2">
-              <span class="size-2 rounded-sm bg-brand"></span>
+              <span class="size-2 rounded-sm bg-yellow-600"></span>
               {{ i18n.t('used') }}
-              <strong class="ml-auto">{{ snapshot.pool.usedTb ?? '—' }} TB</strong>
+              <strong class="ml-auto">{{ poolAmount(snapshot.pool.usedTb) }}</strong>
             </div>
             <div class="flex items-center gap-2">
-              <span class="size-2 rounded-sm bg-line"></span>
+              <span class="size-2 rounded-sm bg-brand-soft ring-1 ring-yellow-200"></span>
               {{ i18n.t('remaining') }}
               <strong class="ml-auto">
-                {{ remainingTb() === null ? '—' : (remainingTb() | number: '1.0-3') }} TB
+                {{ poolAmount(remainingTb()) }}
               </strong>
             </div>
           </div>

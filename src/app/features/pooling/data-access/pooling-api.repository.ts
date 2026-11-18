@@ -3,7 +3,6 @@ import { ApiClient } from '@core/api/api-client';
 import { forkJoin, map } from 'rxjs';
 import {
   DataPool,
-  PoolDraft,
   PoolMember,
   PoolTransaction,
   QuotaDraft,
@@ -54,12 +53,6 @@ export class PoolingApiRepository implements PoolingRepository {
           ),
         ),
     });
-  }
-  save(corporateId: string, draft: PoolDraft, id?: string) {
-    const body = { name: draft.name.trim(), status: draft.status };
-    return id
-      ? this.api.patch<void>(`/pools/${encodeURIComponent(id)}`, body, corporateId)
-      : this.api.post<void>('/pools', body, corporateId);
   }
   adjust(corporateId: string, poolId: string, draft: QuotaDraft) {
     return this.api

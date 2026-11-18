@@ -71,16 +71,16 @@ describe('nullable source contracts', () => {
         {
           id: 'p',
           corporateId: 'c',
-          name: 'P',
+          name: null,
           corporate: 'C',
           lot: null,
           status: 'active',
+          service: 'DATA',
           quotaMb: null,
           usedMb: null,
-          createdAt: '2026-11-01T00:00:00Z',
-          createdBy: 'a',
-          updatedAt: '2026-11-01T00:00:00Z',
-          updatedBy: 'a',
+          remainingMb: null,
+          expiresAt: null,
+          memberCount: 0,
           sourceState: 'partial',
         },
       ]),
@@ -114,7 +114,7 @@ describe('nullable source contracts', () => {
         },
       ]),
     ).toBe(true);
-    expect(capabilitiesResponse({ poolWrite: true, quotaAdjust: false })).toBe(true);
+    expect(capabilitiesResponse({ quotaAdjust: false })).toBe(true);
   });
 });
 

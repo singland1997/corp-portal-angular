@@ -4,21 +4,24 @@ export type PoolStatus = 'active' | 'inactive';
 export type QuotaDirection = 'increase' | 'decrease';
 export type DataUnit = 'MB' | 'GB';
 
+/** A CRM data pool (SHARE_IN_GROUP group); the Portal does not create or rename pools. */
 export interface DataPool {
+  /** CRM group "<customer id>#<lot id | subscription id>". */
   id: string;
   corporateId: string;
-  name: string;
+  /** Lot name or the group's package; `null` when the CRM gives none. */
+  name: string | null;
   corporate: string;
   lot: string | null;
   status: PoolStatus;
-  /** `null` = unknown (no verified/unit-mapped source bucket); never treated as 0. */
+  service: string | null;
+  /** `null` = unknown (withheld or unit not mapped); never treated as 0. */
   quotaMb: number | null;
   usedMb: number | null;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string;
-  updatedBy: string;
-  /** `unlinked` | `partial` | `complete`. */
+  remainingMb: number | null;
+  expiresAt: string | null;
+  memberCount: number;
+  /** `partial` | `complete`. */
   sourceState: string;
 }
 export interface PoolMember {
@@ -47,13 +50,7 @@ export interface PoolTransaction {
 }
 /** Which commands are connected (from GET /pools/capabilities). */
 export interface PoolCapabilities {
-  poolWrite: boolean;
   quotaAdjust: boolean;
-}
-export interface PoolDraft {
-  name: string;
-  corporate: string;
-  status: PoolStatus;
 }
 export interface PoolInventoryItem {
   id: string;

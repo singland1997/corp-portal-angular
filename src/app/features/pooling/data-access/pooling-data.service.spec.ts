@@ -8,12 +8,12 @@ describe('Pooling presentation and validation', () => {
     corporate: 'A',
     lot: 'L',
     status: 'active',
+    service: 'DATA',
     quotaMb: 1000,
     usedMb: 900,
-    createdAt: '',
-    createdBy: '',
-    updatedAt: '',
-    updatedBy: '',
+    remainingMb: 100,
+    expiresAt: null,
+    memberCount: 2,
     sourceState: 'complete',
   };
   const draft: QuotaDraft = { direction: 'decrease', amount: 1, unit: 'GB', reason: 'test' };

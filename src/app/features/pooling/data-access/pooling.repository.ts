@@ -4,7 +4,6 @@ import {
   DataPool,
   PoolMember,
   PoolTransaction,
-  PoolDraft,
   QuotaDraft,
   PoolInventoryItem,
   PoolCapabilities,
@@ -20,7 +19,6 @@ export interface PoolingSnapshot {
 }
 export interface PoolingRepository {
   load(corporateId: string): Observable<PoolingSnapshot>;
-  save(corporateId: string, draft: PoolDraft, id?: string): Observable<void>;
   adjust(corporateId: string, poolId: string, draft: QuotaDraft): Observable<void>;
 }
 export const POOLING_REPOSITORY = new InjectionToken<PoolingRepository>('PoolingRepository', {

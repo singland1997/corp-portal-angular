@@ -28,7 +28,6 @@ import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { PoolingDataService } from './data-access/pooling-data.service';
-import { PoolFormDialogComponent } from './dialogs/pool-form-dialog.component';
 import { QuotaDialogComponent } from './dialogs/quota-dialog.component';
 import { PoolMessageKey } from './pooling.messages';
 import { DataPool, matchesDateRange, PoolMember, QuotaDirection } from './pooling.models';
@@ -68,7 +67,6 @@ const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
     FeedbackStateComponent,
     PageHeaderComponent,
     StatusBadgeComponent,
-    PoolFormDialogComponent,
     QuotaDialogComponent,
   ],
   templateUrl: './pooling.page.html',
@@ -155,7 +153,7 @@ export class PoolingPage {
     ...(['increase', 'decrease'] as const).map((value) => ({ value, label: this.t(value) })),
   ]);
   readonly poolOptions = computed(() =>
-    this.data.pools().map((p) => ({ label: p.name, value: p.id })),
+    this.data.pools().map((p) => ({ label: this.poolName(p), value: p.id })),
   );
 
   // ---- ข้อมูลในตาราง ----
@@ -166,6 +164,7 @@ export class PoolingPage {
       .filter((p) => this.filterStatus() === 'all' || p.status === this.filterStatus())
       .map((p) => ({
         ...p,
+        name: this.poolName(p),
         total: this.formatData(p.quotaMb),
         remaining: this.formatData(
           p.quotaMb !== null && p.usedMb !== null ? p.quotaMb - p.usedMb : null,
@@ -232,7 +231,8 @@ export class PoolingPage {
 
   readonly poolColumns = computed<TableColumn<ReturnType<typeof this.pools>[number]>[]>(() => [
     { field: 'name', header: this.t('poolName'), sortable: true },
-    { field: 'corporate', header: this.t('corporate') },
+    { field: 'lot', header: this.t('lot') },
+    { field: 'memberCount', header: this.t('members'), sortable: true },
     { field: 'total', header: this.t('total') },
     { field: 'remaining', header: this.t('remaining') },
     { field: 'status', header: this.t('status'), type: 'status', sortable: true },
@@ -265,7 +265,6 @@ export class PoolingPage {
   );
   readonly poolActions = computed(() => [
     { id: 'details', label: this.t('details'), icon: 'pi pi-eye' },
-    { id: 'edit', label: this.t('edit'), icon: 'pi pi-pencil' },
   ]);
   readonly memberActions = computed(() => [
     { id: 'details', label: this.t('details'), icon: 'pi pi-eye' },
@@ -296,8 +295,6 @@ export class PoolingPage {
 
   // ---- dialog และข้อความแจ้ง ----
 
-  readonly formVisible = signal(false);
-  readonly editingPool = signal<DataPool | undefined>(undefined);
   readonly quotaVisible = signal(false);
   readonly quotaPoolId = signal('');
   readonly quotaDirection = signal<QuotaDirection>('increase');
@@ -319,6 +316,13 @@ export class PoolingPage {
 
   formatData(megabytes: number | null | undefined, maxUnit: 'GB' | 'TB' = 'TB'): string {
     return this.text.formatData(megabytes, maxUnit);
+  }
+
+  /** CRM pools may have no name: show the lot, else a short form of the CRM group id. */
+  poolName(pool: DataPool): string {
+    return (
+      pool.name ?? pool.lot ?? `${this.t('pool')} ${pool.id.split('#').pop()?.slice(0, 8) ?? ''}`
+    );
   }
 
   formatDate(iso: string | null): string {
@@ -346,12 +350,8 @@ export class PoolingPage {
     this.notice.set(null);
   }
 
-  /** ปุ่มในตาราง pool: แก้ไข หรือ ดูรายละเอียด */
+  /** ปุ่มในตาราง pool: ดูรายละเอียด (pool มาจาก CRM แก้ไขใน Portal ไม่ได้) */
   onPoolAction(event: TableActionEvent<DataPool>): void {
-    if (event.action === 'edit') {
-      this.openForm(event.row);
-      return;
-    }
     this.selectPool(event.row.id);
     this.setPoolQuery(event.row.id);
   }
@@ -361,11 +361,6 @@ export class PoolingPage {
   }
 
   // ---- dialog ----
-
-  openForm(pool?: DataPool): void {
-    this.editingPool.set(pool);
-    this.formVisible.set(true);
-  }
 
   openQuota(direction: QuotaDirection): void {
     const pool = this.pool();
@@ -403,7 +398,6 @@ export class PoolingPage {
 
   private resetForCorporate(): void {
     this.selectedPoolId.set('');
-    this.formVisible.set(false);
     this.quotaVisible.set(false);
     this.inventoryVisible.set(false);
     this.member.set(null);

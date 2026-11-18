@@ -29,8 +29,13 @@ import {
   MobileNumber,
   MobileNumberStatusFilter,
   NumberAction,
+  NumberCounts,
   CommandResult,
 } from './corporate.models';
+import {
+  BarSegment,
+  SegmentedBarComponent,
+} from '@shared/ui/segmented-bar/segmented-bar.component';
 import { CorporateDataService } from './data-access/corporate-data.service';
 import { PackageQuota, PackagesApi } from './data-access/packages-api';
 import { corporateResource } from '@core/api/corporate-resource';
@@ -62,6 +67,7 @@ const UNKNOWN_LOT = '__unknown__';
     FeedbackStateComponent,
     PageHeaderComponent,
     StatusBadgeComponent,
+    SegmentedBarComponent,
   ],
   templateUrl: './corporate.page.html',
 })
@@ -105,6 +111,107 @@ export class CorporatePage {
   }
   readonly table = viewChild(DataTableComponent);
   readonly unknownValue = UNKNOWN_VALUE;
+
+  readonly locale = computed(() => (this.i18n.locale() === 'th' ? 'th-TH' : 'en-US'));
+  /**
+   * Avatar initials: first letter of the first two words. Thai leading vowels (เ แ โ ใ ไ)
+   * are skipped so "แก้ไข" gives "ก", not a lone vowel.
+   */
+  readonly initials = computed(() =>
+    this.corporate
+      .name()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => [...word].find((c) => /\p{L}/u.test(c) && !/[เ-ไ]/.test(c)))
+      .filter((c): c is string => !!c)
+      .join('')
+      .toUpperCase(),
+  );
+  /** Corporate profile rows (CRM plain-text values only; unknown or blank shows "—"). */
+  readonly profileFields = computed(() => {
+    const account = this.corporate.current();
+    const text = (value: string | null | undefined) => (value?.trim() ? value : UNKNOWN_VALUE);
+    return [
+      {
+        key: 'contact',
+        icon: 'pi-envelope',
+        label: this.i18n.t('contact'),
+        value: text(account?.contactEmail),
+      },
+      {
+        key: 'contactPerson',
+        icon: 'pi-user',
+        label: this.i18n.t('contactPerson'),
+        value: text(account?.contactName),
+        sub: account?.contactTelephone?.trim() || null,
+      },
+      {
+        key: 'telephone',
+        icon: 'pi-phone',
+        label: this.i18n.t('companyTelephone'),
+        value: text(account?.telephone),
+      },
+      {
+        key: 'taxId',
+        icon: 'pi-id-card',
+        label: this.i18n.t('taxId'),
+        value: text(account?.taxId),
+      },
+      {
+        key: 'industry',
+        icon: 'pi-briefcase',
+        label: this.i18n.t('industry'),
+        value: this.withOther(account?.industry, account?.industryOther),
+      },
+      {
+        key: 'legalEntityType',
+        icon: 'pi-building',
+        label: this.i18n.t('legalEntityType'),
+        value: this.withOther(account?.legalEntityType, account?.legalEntityTypeOther),
+      },
+    ];
+  });
+  /** Numbers by status for the whole corporate (server counts, never the visible page). */
+  readonly statusSegments = computed(() => this.segmentsFor(this.counts()));
+
+  /**
+   * Status parts in a fixed order with the reserved status colors; numbers whose CRM status
+   * has no Portal mapping are "unknown" (striped, never folded into another status).
+   */
+  segmentsFor(counts: NumberCounts & { terminated?: number }): BarSegment[] {
+    const terminated = counts.terminated ?? 0;
+    const known = counts.active + counts.inactive + counts.suspended + terminated;
+    return [
+      { key: 'active', label: this.i18n.t('active'), value: counts.active, color: '#0ca30c' },
+      {
+        key: 'inactive',
+        label: this.i18n.t('inactive'),
+        value: counts.inactive,
+        color: '#a1a1aa',
+        ink: '#18181b',
+      },
+      {
+        key: 'suspended',
+        label: this.i18n.t('suspended'),
+        value: counts.suspended,
+        color: '#fab219',
+        ink: '#0b0b0b',
+      },
+      {
+        key: 'terminated',
+        label: this.i18n.t('terminated'),
+        value: terminated,
+        color: '#d03b3b',
+      },
+      {
+        key: 'unknown',
+        label: this.i18n.t('unknown'),
+        value: Math.max(0, counts.total - known),
+        color: '#a1a1aa',
+        pattern: true,
+      },
+    ];
+  }
 
   /** CRM value plus its "other" free text, e.g. "OTHER – Cold chain"; unknown stays "—". */
   withOther(value: string | null | undefined, other: string | null | undefined): string {

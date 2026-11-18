@@ -15,17 +15,17 @@ export const poolsResponse = arrayOf(
   objectOf({
     id: text,
     corporateId: text,
-    name: text,
+    name: nullable(text),
     corporate: text,
     lot: nullable(text),
     status: oneOf(['active', 'inactive']),
+    service: nullable(text),
     quotaMb: nullable(finiteNumber),
     usedMb: nullable(finiteNumber),
-    createdAt: dateText,
-    createdBy: text,
-    updatedAt: dateText,
-    updatedBy: text,
-    sourceState: oneOf(['unlinked', 'partial', 'complete']),
+    remainingMb: nullable(finiteNumber),
+    expiresAt: nullable(dateText),
+    memberCount: finiteNumber,
+    sourceState: oneOf(['partial', 'complete']),
   }),
 );
 export const membersResponse = arrayOf(
@@ -56,4 +56,4 @@ export const transactionsResponse = arrayOf(
 export const inventoryResponse = arrayOf(
   objectOf({ id: text, poolId: text, name: nullable(text), status: optional(nullable(text)) }),
 );
-export const capabilitiesResponse = objectOf({ poolWrite: bool, quotaAdjust: bool });
+export const capabilitiesResponse = objectOf({ quotaAdjust: bool });

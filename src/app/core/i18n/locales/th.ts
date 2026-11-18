@@ -4,6 +4,8 @@ export const th: Record<TranslationKey, string> = {
   productName: 'ผลิตภัณฑ์',
   corporateQuota: 'โควตาองค์กร',
   lotQuotaType: 'ประเภทโควตา',
+  numbersByStatus: 'เลขหมายตามสถานะ',
+  overLimit: 'ใช้เกินโควตา',
   packagesInUse: 'แพ็กเกจที่ใช้อยู่',
   noPackagesInUse: 'ยังไม่มีเลขหมายที่ใช้แพ็กเกจอยู่',
   packageType: 'ประเภทแพ็กเกจ',

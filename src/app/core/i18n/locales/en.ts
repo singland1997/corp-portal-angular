@@ -2,6 +2,8 @@ export const en = {
   productName: 'Product',
   corporateQuota: 'Corporate quota',
   lotQuotaType: 'Quota type',
+  numbersByStatus: 'Numbers by status',
+  overLimit: 'Over limit',
   packagesInUse: 'Packages in use',
   noPackagesInUse: 'No numbers have a current package.',
   packageType: 'Package type',

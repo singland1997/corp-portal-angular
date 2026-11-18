@@ -21,6 +21,7 @@ import { DataTableComponent } from '@shared/ui/data-table/data-table.component';
 import { TableColumn, TableQuery } from '@shared/ui/data-table/data-table.models';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
+import { MeterComponent } from '@shared/ui/meter/meter.component';
 import { featureMessages } from '@shared/utils/feature-messages';
 import { formatDataSize } from '@shared/utils/data-size';
 import { QuotaApi, QuotaTransaction } from './data-access/quota-api';
@@ -37,6 +38,7 @@ import { quotaEn, quotaTh } from './quota.messages';
     DataTableComponent,
     PageHeaderComponent,
     FeedbackStateComponent,
+    MeterComponent,
   ],
   templateUrl: './quota.page.html',
 })
