@@ -8,7 +8,12 @@ export function testSession(admin = false, accessToken = 'test-token'): LoginRes
     nameTh: id,
     initials: id,
     contactEmail: 'test@example.test',
-    industry: 'Test',
+    industry: 'OTHER',
+    industryOther: 'Cold chain',
+    taxId: '0105512345678',
+    status: 'ACTIVE',
+    contactName: 'Somchai',
+    contactTelephone: '02-123-4567',
     lotId: 'LOT-' + id,
   });
   return {

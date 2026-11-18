@@ -63,3 +63,9 @@ export interface Invite {
 
 /** ผลของ POST /api/v1/users */
 export type CreatedUser = UserRow & Invite;
+
+export interface SalesAssignment {
+  corporateId: string;
+  userId: string;
+  name: string;
+}

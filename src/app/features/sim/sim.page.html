@@ -1,31 +1,32 @@
 <div class="grid gap-4 md:gap-6">
   <cp-page-header [title]="i18n.t('sim')" />
-  @if (resource.loading()) {
-    <cp-feedback-state kind="loading" />
-  } @else if (resource.error(); as error) {
-    <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="resource.reload()" />
-  } @else {
-    <cp-card [flush]="true">
-      <cp-data-table
-        [rows]="rows()"
-        [columns]="columns()"
-        [label]="i18n.t('sim')"
-        [actions]="actions()"
-        (rowAction)="openDetails($event)"
-      >
-        <p-select
-          table-filters
-          [options]="statusOptions()"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="status()"
-          (ngModelChange)="status.set($event)"
-          [ariaLabel]="i18n.t('status')"
-          appendTo="body"
-        />
-      </cp-data-table>
-    </cp-card>
-  }
+  <cp-card [flush]="true">
+    <cp-data-table
+      #table
+      [rows]="rows()"
+      [serverSide]="true"
+      [totalRecords]="data.total()"
+      [loading]="resource.loading()"
+      [error]="resource.error() ? i18n.t(resource.error()!) : ''"
+      (queryChange)="data.query.set($event)"
+      (retry)="resource.reload()"
+      [columns]="columns()"
+      [label]="i18n.t('sim')"
+      [actions]="actions()"
+      (rowAction)="openDetails($event)"
+    >
+      <p-select
+        table-filters
+        [options]="statusOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="status()"
+        (ngModelChange)="status.set($event); table.reset()"
+        [ariaLabel]="i18n.t('status')"
+        appendTo="body"
+      />
+    </cp-data-table>
+  </cp-card>
 </div>
 <p-dialog
   [visible]="selected() !== null"

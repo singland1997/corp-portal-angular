@@ -86,5 +86,9 @@
   "/api/v1/sim-operations": {
     "target": "http://127.0.0.1:4103",
     "secure": false
+  },
+  "/api/v1/invoices/**": {
+    "target": "http://127.0.0.1:4104",
+    "secure": false
   }
 }

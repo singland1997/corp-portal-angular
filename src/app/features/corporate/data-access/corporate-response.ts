@@ -1,4 +1,6 @@
+import { pageResponse } from '@core/api/pagination';
 import {
+  optional,
   arrayOf,
   dateText,
   finiteNumber,
@@ -20,6 +22,21 @@ export const mobileNumberResponse = objectOf({
   usageMb: nullable(finiteNumber),
   iccid: nullable(text),
   lot: nullable(text),
+  productName: optional(nullable(text)),
+  packageName: optional(nullable(text)),
+  sourceStatus: optional(nullable(text)),
+  simInventoryStatus: optional(nullable(text)),
+  numberInventoryStatus: optional(nullable(text)),
+  quotas: optional(
+    arrayOf(
+      objectOf({
+        totalMb: nullable(finiteNumber),
+        remainingMb: nullable(finiteNumber),
+        expiresAt: nullable(dateText),
+        capMax: nullable(bool),
+      }),
+    ),
+  ),
 });
 
 export const numberCountsResponse = objectOf({
@@ -47,3 +64,20 @@ export const commandResponse = objectOf({
     }),
   ),
 });
+
+export const numberPageResponse = (value: unknown) =>
+  pageResponse(mobileNumberResponse)(value) &&
+  objectOf({
+    counts: numberCountsResponse,
+    lots: arrayOf(
+      objectOf({
+        lot: nullable(text),
+        productName: optional(nullable(text)),
+        quotaType: optional(nullable(text)),
+        counts: numberCountsResponse,
+      }),
+    ),
+    updatedAt: dateText,
+    usageThrough: nullable(dateText),
+    capabilities: objectOf({ suspend: bool, resume: bool }),
+  })(value);

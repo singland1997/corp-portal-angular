@@ -23,6 +23,7 @@
 @layer base {
   html {
     color-scheme: light;
+    font-size: clamp(100%, calc(75% + 0.208333vw), 125%);
   }
   body {
     @apply bg-canvas font-sans text-sm text-ink;

@@ -1,4 +1,31 @@
 export const en = {
+  productName: 'Product',
+  corporateQuota: 'Corporate quota',
+  lotQuotaType: 'Quota type',
+  packagesInUse: 'Packages in use',
+  noPackagesInUse: 'No numbers have a current package.',
+  packageType: 'Package type',
+  packageQuotas: 'Quota',
+  packagePrice: 'Price',
+  legalEntityType: 'Legal entity type',
+  taxId: 'Tax ID',
+  corporateStatus: 'Corporate status (CRM)',
+  companyTelephone: 'Company telephone',
+  contactPerson: 'Contact person',
+  packageName: 'Package',
+  subscriberSourceStatus: 'Subscriber status (CRM)',
+  simInventoryStatus: 'SIM inventory status',
+  numberInventoryStatus: 'Number inventory status',
+  dataQuotaLeft: 'Data quota left',
+  expires: 'expires',
+  productQuota: 'Product quota',
+  shareInGroupQuota: 'Share in group',
+  exportTooLarge: 'Too many rows to export. Narrow the date range or search and try again.',
+  billing: 'Invoices',
+  sessionRenewalFailed:
+    'Session renewal failed. You can continue until this session expires, then sign in again.',
+  sessionRestoreFailed:
+    'The previous session could not be restored. Check your connection and sign in again.',
   requestTimeout:
     'The request timed out. Please try again. If you submitted a change, check its status first.',
   invalidServiceResponse:

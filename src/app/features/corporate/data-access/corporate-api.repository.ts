@@ -1,10 +1,14 @@
 import { inject, Injectable } from '@angular/core';
 import { ApiClient } from '@core/api/api-client';
-import { CommandResult, CorporateSnapshot, NumberAction } from '../corporate.models';
+import { CommandResult, CorporateSnapshot, NumberAction, NumberPage } from '../corporate.models';
 import type { CorporateRepository } from './corporate.repository';
 import { map } from 'rxjs';
 import { parseResponse } from '@core/api/response-validation';
-import { commandResponse, corporateSnapshotResponse } from './corporate-response';
+import {
+  commandResponse,
+  corporateSnapshotResponse,
+  numberPageResponse,
+} from './corporate-response';
 
 @Injectable({ providedIn: 'root' })
 export class CorporateApiRepository implements CorporateRepository {
@@ -18,6 +22,12 @@ export class CorporateApiRepository implements CorporateRepository {
           parseResponse<CorporateSnapshot>(value, corporateSnapshotResponse, 'corporate'),
         ),
       );
+  }
+
+  page(id: string, params: Record<string, string | number>) {
+    return this.api
+      .get<unknown>(`/corporates/${encodeURIComponent(id)}/numbers`, id, params)
+      .pipe(map((value) => parseResponse<NumberPage>(value, numberPageResponse, 'number page')));
   }
 
   command(corporateId: string, action: NumberAction, ids: readonly string[]) {

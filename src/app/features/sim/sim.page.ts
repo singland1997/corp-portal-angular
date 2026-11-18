@@ -10,28 +10,23 @@ import {
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
-import { corporateResource } from '@core/api/corporate-resource';
+import { CorporateDataService } from '../corporate/data-access/corporate-data.service';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { PORTAL_STATUSES } from '@shared/models/portal-status';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { DataTableComponent } from '@shared/ui/data-table/data-table.component';
 import { TableActionEvent, TableColumn } from '@shared/ui/data-table/data-table.models';
-import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { formatDataSize } from '@shared/utils/data-size';
-import {
-  matchesStatus,
-  MobileNumber,
-  MobileNumberStatusFilter,
-} from '../corporate/corporate.models';
-import { SimApi } from './data-access/sim-api';
+import { MobileNumber } from '../corporate/corporate.models';
 
 type SimRow = MobileNumber & { usage: string };
 
 @Component({
   selector: 'cp-sim-page',
+  providers: [CorporateDataService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
@@ -39,7 +34,6 @@ type SimRow = MobileNumber & { usage: string };
     SelectModule,
     CardComponent,
     DataTableComponent,
-    FeedbackStateComponent,
     PageHeaderComponent,
     StatusBadgeComponent,
   ],
@@ -47,10 +41,10 @@ type SimRow = MobileNumber & { usage: string };
 })
 export class SimPage {
   readonly i18n = inject(LocaleService);
-  private readonly api = inject(SimApi);
+  readonly data = inject(CorporateDataService);
   private readonly corporate = inject(CorporateContext);
-  readonly resource = corporateResource((id) => this.api.list(id));
-  readonly status = signal<MobileNumberStatusFilter>('all');
+  readonly resource = this.data.resource;
+  readonly status = this.data.status;
   readonly selected = signal<SimRow | null>(null);
   readonly statusOptions = computed(() => [
     { label: this.i18n.t('allStatuses'), value: 'all' },
@@ -58,13 +52,13 @@ export class SimPage {
     { label: this.i18n.t('unknown'), value: 'unknown' },
   ]);
   readonly rows = computed<SimRow[]>(() =>
-    (this.resource.data() ?? [])
-      .filter((row) => matchesStatus(row.status, this.status()))
+    this.data
+      .numbers()
       .map((row) => ({ ...row, usage: formatDataSize(row.usageMb, this.i18n.locale(), 'GB') })),
   );
   readonly columns = computed<TableColumn<SimRow>[]>(() => [
     { field: 'mobile', header: this.i18n.t('mobile'), sortable: true },
-    { field: 'iccid', header: 'ICCID', sortable: true },
+    { field: 'iccid', header: 'ICCID' },
     { field: 'lot', header: this.i18n.t('lot'), sortable: true },
     { field: 'owner', header: this.i18n.t('owner'), sortable: true },
     { field: 'package', header: this.i18n.t('package'), sortable: true },

@@ -28,9 +28,9 @@ describe('Pooling presentation and validation', () => {
   it('uses MB and GB for signed transaction values in both locales', () => {
     for (const locale of ['en-US', 'th-TH']) {
       expect(formatDataSize(999, locale, 'GB')).toBe('999 MB');
-      expect(formatDataSize(18400, locale, 'GB')).toBe('18.4 GB');
-      expect(formatDataSize(-100000, locale, 'GB')).toBe('-100 GB');
-      expect(formatDataSize(1000000, locale, 'GB')).toBe('1,000 GB');
+      expect(formatDataSize(18400, locale, 'GB')).toBe('17.97 GB');
+      expect(formatDataSize(-100000, locale, 'GB')).toBe('-97.66 GB');
+      expect(formatDataSize(1000000, locale, 'GB')).toBe('976.56 GB');
     }
   });
   it('filters inclusive Bangkok calendar dates', () => {

@@ -1,6 +1,32 @@
 import { TranslationKey } from '../translation.models';
 
 export const th: Record<TranslationKey, string> = {
+  productName: 'ผลิตภัณฑ์',
+  corporateQuota: 'โควตาองค์กร',
+  lotQuotaType: 'ประเภทโควตา',
+  packagesInUse: 'แพ็กเกจที่ใช้อยู่',
+  noPackagesInUse: 'ยังไม่มีเลขหมายที่ใช้แพ็กเกจอยู่',
+  packageType: 'ประเภทแพ็กเกจ',
+  packageQuotas: 'โควตา',
+  packagePrice: 'ราคา',
+  legalEntityType: 'ประเภทนิติบุคคล',
+  taxId: 'เลขประจำตัวผู้เสียภาษี',
+  corporateStatus: 'สถานะองค์กร (CRM)',
+  companyTelephone: 'โทรศัพท์บริษัท',
+  contactPerson: 'ผู้ติดต่อ',
+  packageName: 'แพ็กเกจ',
+  subscriberSourceStatus: 'สถานะผู้ใช้บริการ (CRM)',
+  simInventoryStatus: 'สถานะคลัง SIM',
+  numberInventoryStatus: 'สถานะคลังเลขหมาย',
+  dataQuotaLeft: 'โควตาดาต้าคงเหลือ',
+  expires: 'หมดอายุ',
+  productQuota: 'โควตาตามผลิตภัณฑ์',
+  shareInGroupQuota: 'แชร์ในกลุ่ม',
+  exportTooLarge: 'ข้อมูลมากเกินกว่าจะส่งออกได้ กรุณาลดช่วงวันที่หรือระบุคำค้นให้แคบลง',
+  billing: 'ใบแจ้งหนี้',
+  sessionRenewalFailed:
+    'ต่ออายุเซสชันไม่สำเร็จ ยังใช้งานได้จนกว่าเซสชันจะหมดอายุ จากนั้นกรุณาเข้าสู่ระบบใหม่',
+  sessionRestoreFailed: 'กู้คืนเซสชันเดิมไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วเข้าสู่ระบบอีกครั้ง',
   requestTimeout:
     'คำขอใช้เวลานานเกินกำหนด กรุณาลองใหม่ หากเป็นการแก้ไขข้อมูล ให้ตรวจสอบสถานะล่าสุดก่อนส่งซ้ำ',
   invalidServiceResponse:

@@ -11,6 +11,7 @@ export class AuthSessionStore {
   private readonly state = signal<AuthSession | null>(null);
   private expiryTimer?: ReturnType<typeof setTimeout>;
   readonly signingOut = signal(false);
+  readonly renewalFailed = signal(false);
   readonly session = this.state.asReadonly();
   readonly user = computed(() => this.state()?.user ?? null);
 
@@ -43,6 +44,7 @@ export class AuthSessionStore {
     }
     clearTimeout(this.expiryTimer);
     this.signingOut.set(false);
+    this.renewalFailed.set(false);
     this.state.set({ ...response, expiresAt: Date.now() + response.expiresIn * 1000 });
     this.refreshTokens.save(response.refreshToken);
     this.expiryTimer = setTimeout(() => this.clear(), response.expiresIn * 1000);

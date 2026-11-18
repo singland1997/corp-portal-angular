@@ -1,3 +1,4 @@
+import { MB_PER_GB } from '@shared/utils/data-size';
 import { PortalStatus } from '@shared/models/portal-status';
 export type PoolStatus = 'active' | 'inactive';
 export type QuotaDirection = 'increase' | 'decrease';
@@ -78,9 +79,8 @@ export type PoolError =
   | 'inactivePool'
   | 'quotaUnknown';
 
-// Decimal conversion is a proposed UI convention pending the provider contract.
 export function toMegabytes(amount: number | null, unit: DataUnit): number {
-  return Math.round((amount ?? 0) * (unit === 'GB' ? 1000 : 1) * 100) / 100;
+  return Math.round((amount ?? 0) * (unit === 'GB' ? MB_PER_GB : 1) * 100) / 100;
 }
 export function quotaError(pool: DataPool, draft: QuotaDraft): PoolError | null {
   if (pool.status !== 'active') return 'inactivePool';

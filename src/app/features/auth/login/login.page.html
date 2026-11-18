@@ -14,6 +14,9 @@
       class="grid gap-4 [@media(max-height:700px)]:gap-3"
       [attr.aria-busy]="busy()"
     >
+      @if (session.renewalFailed() && !failure()) {
+        <p-message severity="warn" role="status">{{ i18n.t('sessionRestoreFailed') }}</p-message>
+      }
       @if (failure(); as error) {
         <p-message severity="error" role="alert">{{ i18n.t(error) }}</p-message>
       }

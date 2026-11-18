@@ -1,0 +1,109 @@
+<div class="grid gap-6">
+  <cp-page-header [title]="t('title')" />
+  <cp-card [flush]="true">
+    <cp-data-table
+      [rows]="rows()"
+      [columns]="columns()"
+      [label]="t('title')"
+      [serverSide]="true"
+      [totalRecords]="resource.data()?.total ?? 0"
+      [loading]="resource.loading()"
+      [error]="resource.error() ? i18n.t(resource.error()!) : ''"
+      [actions]="actions()"
+      [cellTemplate]="invoiceCell"
+      (queryChange)="query.set($event)"
+      (retry)="resource.reload()"
+      (rowAction)="selected.set($event.row.id)"
+    >
+      <p-select
+        table-filters
+        [options]="options()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="state()"
+        (ngModelChange)="filter($event)"
+        [ariaLabel]="t('paymentStatus')"
+        appendTo="body"
+      />
+    </cp-data-table>
+  </cp-card>
+</div>
+<ng-template #invoiceCell let-row let-column="column">{{ cell(row, column.field) }}</ng-template>
+<p-dialog
+  [visible]="selected() !== null"
+  (visibleChange)="!$event && selected.set(null)"
+  [header]="t('title')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeAriaLabel]="i18n.t('close')"
+  [pt]="{ root: { class: 'w-[60rem] max-w-[calc(100vw-2rem)]' } }"
+>
+  @if (detail.loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (detail.error(); as error) {
+    <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="detail.reload()" />
+  } @else if (detail.data(); as invoice) {
+    <dl class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (column of columns(); track column.field) {
+        <div>
+          <dt class="text-xs text-muted">{{ column.header }}</dt>
+          <dd class="wrap-anywhere font-medium">{{ cell(invoice, column.field) }}</dd>
+        </div>
+      }
+    </dl>
+    <h2 class="mb-3 font-semibold">{{ t('lines') }}</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr>
+            @for (key of lineHeaders; track key) {
+              <th class="p-3">{{ t(key) }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of invoice.lines; track $index) {
+            <tr class="border-t border-line">
+              <td class="p-3">{{ line.description ?? line.chargeType ?? '—' }}</td>
+              <td class="p-3">{{ line.quantity ?? '—' }}</td>
+              <td class="p-3">{{ money(line.unitPrice) }}</td>
+              <td class="p-3">{{ money(line.amount) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4"><cp-feedback-state /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <h2 class="mt-6 mb-3 font-semibold">{{ t('schedule') }}</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr>
+            @for (key of scheduleHeaders; track key) {
+              <th class="p-3">{{ t(key) }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of invoice.schedule; track $index) {
+            <tr class="border-t border-line">
+              <td class="p-3">{{ item.sequenceNo ?? '—' }}</td>
+              <td class="p-3">{{ item.dueDate ?? '—' }}</td>
+              <td class="p-3">{{ money(item.amountDue) }}</td>
+              <td class="p-3">{{ money(item.amountPaid) }}</td>
+              <td class="p-3">{{ item.status ?? '—' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5"><cp-feedback-state /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</p-dialog>

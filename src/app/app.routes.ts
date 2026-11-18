@@ -60,6 +60,14 @@ export const routes: Routes = [
         loadComponent: () => import('@features/users/users.page').then((m) => m.UsersPage),
       },
       {
+        path: 'quota',
+        loadComponent: () => import('@features/quota/quota.page').then((m) => m.QuotaPage),
+      },
+      {
+        path: 'billing',
+        loadComponent: () => import('@features/billing/billing.page').then((m) => m.BillingPage),
+      },
+      {
         path: 'reports',
         loadComponent: () => import('@features/reports/reports.page').then((m) => m.ReportsPage),
       },

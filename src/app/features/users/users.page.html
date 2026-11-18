@@ -1,82 +1,89 @@
-@if (loading()) {
-  <cp-feedback-state kind="loading" />
-} @else if (loadError(); as error) {
-  <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="load()" />
-} @else {
-  <div class="grid gap-4 md:gap-6">
-    <cp-page-header [title]="t('title')">
-      <p-button
-        [label]="t('createUser')"
-        [ariaLabel]="t('createUser')"
-        icon="pi pi-plus"
-        (onClick)="openCreate()"
-      />
-    </cp-page-header>
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="t('title')">
+    <p-button
+      [label]="t('createUser')"
+      [ariaLabel]="t('createUser')"
+      icon="pi pi-plus"
+      (onClick)="openCreate()"
+    />
+  </cp-page-header>
 
-    @if (notice(); as message) {
-      <p-message severity="success" role="status">{{ t(message) }}</p-message>
-    }
-    @if (newInvite(); as invite) {
-      <cp-card>
-        <cp-invite-link [invite]="invite" />
-      </cp-card>
-    }
-
-    <cp-card [title]="t('users')" [flush]="true">
-      <cp-data-table
-        [rows]="rows()"
-        [columns]="columns()"
-        [label]="t('users')"
-        [searchPlaceholder]="t('search')"
-        [actions]="actions()"
-        (rowAction)="onRowAction($event)"
-      >
-        <!-- ตัวกรองเพิ่มเติม (ไม่บังคับ) -->
-        <div table-filters class="flex flex-wrap items-center gap-2">
-          <p-select
-            [options]="corporateOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="corporateFilter()"
-            (ngModelChange)="corporateFilter.set($event)"
-            [ariaLabel]="t('corporate')"
-            appendTo="body"
-          />
-          <p-select
-            [options]="roleOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="roleFilter()"
-            (ngModelChange)="roleFilter.set($event)"
-            [ariaLabel]="t('role')"
-            appendTo="body"
-          />
-          <p-select
-            [options]="statusOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="statusFilter()"
-            (ngModelChange)="statusFilter.set($event)"
-            [ariaLabel]="t('status')"
-            appendTo="body"
-          />
-          <p-button
-            icon="pi pi-filter-slash"
-            severity="secondary"
-            [outlined]="true"
-            [ariaLabel]="t('clear')"
-            (onClick)="clearFilters()"
-          />
-        </div>
-      </cp-data-table>
+  @if (owners.error(); as error) {
+    <p-message severity="error">
+      {{ i18n.t(error) }}
+      <p-button [label]="i18n.t('retry')" (onClick)="owners.reload()" />
+    </p-message>
+  }
+  @if (notice(); as message) {
+    <p-message severity="success" role="status">{{ t(message) }}</p-message>
+  }
+  @if (newInvite(); as invite) {
+    <cp-card>
+      <cp-invite-link [invite]="invite" />
     </cp-card>
-  </div>
+  }
 
-  <cp-user-form-dialog
-    [(visible)]="formVisible"
-    [user]="editingUser()"
-    [users]="users()"
-    (refreshUsers)="load()"
-    (saved)="onSaved($event)"
-  />
-}
+  <cp-card [title]="t('users')" [flush]="true">
+    <cp-data-table
+      [rows]="rows()"
+      [serverSide]="true"
+      [totalRecords]="resource.data()?.total ?? 0"
+      [loading]="resource.loading()"
+      [error]="resource.error() ? i18n.t(resource.error()!) : ''"
+      (queryChange)="query.set($event)"
+      (retry)="resource.reload()"
+      [columns]="columns()"
+      [label]="t('users')"
+      [searchPlaceholder]="t('search')"
+      [actions]="actions()"
+      (rowAction)="onRowAction($event)"
+    >
+      <!-- ตัวกรองเพิ่มเติม (ไม่บังคับ) -->
+      <div table-filters class="flex flex-wrap items-center gap-2">
+        <p-select
+          [options]="corporateOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="corporateFilter()"
+          (ngModelChange)="corporateFilter.set($event)"
+          [ariaLabel]="t('corporate')"
+          appendTo="body"
+        />
+        <p-select
+          [options]="roleOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="roleFilter()"
+          (ngModelChange)="roleFilter.set($event)"
+          [ariaLabel]="t('role')"
+          appendTo="body"
+        />
+        <p-select
+          [options]="statusOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+          [ariaLabel]="t('status')"
+          appendTo="body"
+        />
+        <p-button
+          icon="pi pi-filter-slash"
+          severity="secondary"
+          [outlined]="true"
+          [ariaLabel]="t('clear')"
+          (onClick)="clearFilters()"
+        />
+      </div>
+    </cp-data-table>
+  </cp-card>
+</div>
+
+<cp-user-form-dialog
+  [(visible)]="formVisible"
+  [user]="editingUser()"
+  [assignments]="owners.data() ?? []"
+  [assignmentsReady]="!owners.loading() && !owners.error()"
+  (refreshUsers)="load()"
+  (saved)="onSaved($event)"
+/>
