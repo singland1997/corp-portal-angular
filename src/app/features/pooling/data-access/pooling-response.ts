@@ -44,6 +44,8 @@ export const transactionsResponse = arrayOf(
     id: text,
     poolId: text,
     type: text,
+    action: optional(nullable(text)),
+    mobile: optional(nullable(text)),
     occurredAt: nullable(dateText),
     amountMb: nullable(finiteNumber),
     totalAfterMb: nullable(finiteNumber),

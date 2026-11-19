@@ -42,7 +42,7 @@
     <p-table
       [value]="visibleRows()"
       [pt]="{
-        table: { class: visibleRows().length ? 'min-w-[640px]' : 'w-full' },
+        table: { class: tableClass() },
         thead: { class: visibleRows().length ? '' : 'hidden' },
       }"
       dataKey="id"
@@ -64,12 +64,14 @@
           @for (column of headerColumns(); track column.field) {
             <th
               class="whitespace-nowrap text-xs"
+              [class.text-right]="column.align === 'end'"
               [style.width]="column.width"
               [attr.aria-sort]="column.sortDirection"
             >
               @if (column.sortable) {
                 <button
                   class="flex cursor-pointer items-center gap-2 border-0 bg-transparent py-1 text-left font-semibold text-inherit"
+                  [class.ml-auto]="column.align === 'end'"
                   (click)="sort(column)"
                 >
                   {{ column.header }}
@@ -102,7 +104,7 @@
             </td>
           }
           @for (column of columns(); track column.field) {
-            <td class="whitespace-nowrap text-sm">
+            <td [class]="cellClass(column, row)">
               @if (cellTemplate(); as template) {
                 <ng-container
                   [ngTemplateOutlet]="template"

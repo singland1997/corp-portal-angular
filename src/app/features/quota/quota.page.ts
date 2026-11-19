@@ -25,8 +25,18 @@ import { MeterComponent } from '@shared/ui/meter/meter.component';
 import { featureMessages } from '@shared/utils/feature-messages';
 import { formatDataSize } from '@shared/utils/data-size';
 import { QuotaApi, QuotaTransaction } from './data-access/quota-api';
+import { quotaActionLabel, signedAmount } from '@shared/utils/quota-history';
 import { quotaEn, quotaTh } from './quota.messages';
 
+const QUOTA_COLUMN_LAYOUT: Partial<
+  Record<keyof QuotaTransaction, Pick<TableColumn<QuotaTransaction>, 'width' | 'align' | 'type'>>
+> = {
+  occurredAt: { width: '11rem' },
+  action: { width: '11rem' },
+  service: { width: '7rem' },
+  changeAmount: { width: '9rem', align: 'end', type: 'signed' },
+  balanceAfter: { width: '10rem', align: 'end' },
+};
 @Component({
   selector: 'cp-quota-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,7 +83,13 @@ export class QuotaPage {
   readonly columns = computed<TableColumn<QuotaTransaction>[]>(() =>
     (
       ['occurredAt', 'action', 'service', 'changeAmount', 'balanceAfter', 'description'] as const
-    ).map((field) => ({ field, header: this.t(field), sortable: field !== 'description' })),
+    ).map((field) => ({
+      field,
+      header: this.t(field),
+      sortable: field !== 'description',
+      // Same widths on every page; the description takes what is left.
+      ...QUOTA_COLUMN_LAYOUT[field],
+    })),
   );
   readonly quantities = ['total', 'used', 'remaining'] as const;
 
@@ -116,8 +132,10 @@ export class QuotaPage {
   }
 
   cell(row: QuotaTransaction, field: keyof QuotaTransaction): string {
-    if (field === 'changeAmount' || field === 'balanceAfter')
-      return this.amount(row[field], row.unit);
+    if (field === 'changeAmount')
+      return signedAmount(row.changeAmount, (value) => this.amount(value, row.unit));
+    if (field === 'balanceAfter') return this.amount(row[field], row.unit);
+    if (field === 'action') return quotaActionLabel(row.action, (key) => this.i18n.t(key));
     if (field === 'occurredAt') return this.date(row[field]);
     return row[field] ?? '—';
   }

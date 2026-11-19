@@ -214,7 +214,8 @@
           </div>
         </cp-card>
       </div>
-      <p-tabs value="members">
+      <!-- min-w-0: a grid item otherwise grows to its widest table instead of letting it scroll. -->
+      <p-tabs value="members" class="min-w-0">
         <p-tablist>
           <p-tab value="members">{{ t('members') }}</p-tab>
           <p-tab value="history">{{ t('transactions') }}</p-tab>
