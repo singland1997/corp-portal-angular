@@ -5,10 +5,53 @@
 } @else if (snapshot(); as data) {
   <div class="grid gap-4 md:gap-6">
     <cp-page-header [title]="i18n.t('networkOverview')">
-      <span class="rounded-lg border border-line bg-white px-4 py-2 text-xs font-medium">
-        {{ periodStartLabel() }} – {{ dailyLabels().at(-1) }}
-      </span>
+      <div
+        role="group"
+        [attr.aria-label]="i18n.t('dateRange')"
+        class="flex flex-wrap items-center justify-end gap-2"
+      >
+        <p-select
+          inputId="dashboard-range"
+          [options]="presets()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="preset()"
+          (ngModelChange)="choosePreset($event)"
+          [ariaLabel]="i18n.t('dateRange')"
+          size="small"
+        />
+        @if (preset() === 'custom') {
+          <input
+            pInputText
+            pSize="small"
+            type="date"
+            [attr.aria-label]="i18n.t('rangeFrom')"
+            [min]="window()?.from ?? ''"
+            [max]="window()?.to ?? ''"
+            [ngModel]="customFrom()"
+            (ngModelChange)="customFrom.set($event)"
+          />
+          <span aria-hidden="true">–</span>
+          <input
+            pInputText
+            pSize="small"
+            type="date"
+            [attr.aria-label]="i18n.t('rangeTo')"
+            [min]="window()?.from ?? ''"
+            [max]="window()?.to ?? ''"
+            [ngModel]="customTo()"
+            (ngModelChange)="customTo.set($event)"
+          />
+        } @else {
+          <span class="text-xs font-medium text-muted">
+            {{ periodStartLabel() }} – {{ periodEndLabel() }}
+          </span>
+        }
+      </div>
     </cp-page-header>
+    @if (invalidCustom()) {
+      <p role="alert" class="text-sm text-red-700">{{ i18n.t('invalidDateRange') }}</p>
+    }
     <section
       [attr.aria-label]="i18n.t('dashboard')"
       class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4"
@@ -120,7 +163,7 @@
                 <td class="hidden px-4 py-3 md:table-cell">{{ item.mobile ?? '—' }}</td>
                 <td class="hidden px-4 py-3 md:table-cell">{{ operationLabel(item) }}</td>
                 <td class="hidden px-4 py-3 md:table-cell">{{ activityTime(item.time) }}</td>
-                <td class="px-4 py-3"><cp-status-badge [status]="item.status" /></td>
+                <td class="px-4 py-3 text-sm whitespace-nowrap">{{ statusChange(item) }}</td>
                 <td class="hidden px-4 py-3 md:table-cell">
                   <button
                     class="grid size-9 place-items-center rounded-lg border border-line hover:bg-zinc-50"
@@ -155,8 +198,8 @@
         <dd>{{ operationLabel(item) }}</dd>
         <dt>{{ i18n.t('activityTimestamp') }}</dt>
         <dd>{{ activityTime(item.time) }}</dd>
-        <dt>{{ i18n.t('status') }}</dt>
-        <dd><cp-status-badge [status]="item.status" /></dd>
+        <dt>{{ i18n.t('statusChange') }}</dt>
+        <dd>{{ statusChange(item) }}</dd>
       </dl>
     }
   </p-dialog>

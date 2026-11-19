@@ -41,7 +41,8 @@ export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
   scales: {
     x: {
       grid: { display: false },
-      ticks: { color: PORTAL_COLORS.muted },
+      // Long ranges (up to a year): fewer, level labels instead of a crowded slanted row.
+      ticks: { color: PORTAL_COLORS.muted, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
       border: { display: false },
     },
     y: {

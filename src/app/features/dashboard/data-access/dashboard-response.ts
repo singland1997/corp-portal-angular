@@ -6,6 +6,7 @@ import {
   nullable,
   objectOf,
   oneOf,
+  optional,
   text,
 } from '@core/api/response-validation';
 import { PORTAL_STATUSES } from '@shared/models/portal-status';
@@ -15,6 +16,9 @@ export const dashboardResponse = objectOf({
   updatedAt: dateText,
   periodStart: dateText,
   dailyUsageFrom: dateText,
+  periodEnd: optional(dateText),
+  availableFrom: optional(dateText),
+  availableTo: optional(dateText),
   numbers: numberCountsResponse,
   totalUsageTb: nullable(finiteNumber),
   pool: objectOf({
@@ -28,6 +32,8 @@ export const dashboardResponse = objectOf({
       mobile: nullable(text),
       operation: text,
       status: nullable(oneOf(PORTAL_STATUSES)),
+      statusFrom: optional(nullable(text)),
+      statusTo: optional(nullable(text)),
       time: dateText,
     }),
   ),
