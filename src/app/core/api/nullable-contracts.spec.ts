@@ -122,6 +122,8 @@ describe('unknown values in presentation', () => {
   it('never renders or sums unknown values as zero', () => {
     expect(formatDataSize(null)).toBe('—');
     expect(formatDataSize(0)).toBe('0 MB');
+    // The dashboard total arrives in TB; a small month must stay visible, not "0 MB".
+    expect(formatDataSize((107.49 / 1_048_576) * 1_048_576)).toBe('107.49 MB');
     expect(csvCell(null)).toBe('""');
   });
 
