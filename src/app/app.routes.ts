@@ -52,7 +52,8 @@ export const routes: Routes = [
       },
       {
         path: 'pooling',
-        loadComponent: () => import('@features/pooling/pooling.page').then((m) => m.PoolingPage),
+        // Data pool = the bulk the corporate bought (CRM CORPORATE_QUOTA); the page lives in features/quota.
+        loadComponent: () => import('@features/quota/quota.page').then((m) => m.QuotaPage),
       },
       {
         path: 'users',
@@ -61,7 +62,8 @@ export const routes: Routes = [
       },
       {
         path: 'quota',
-        loadComponent: () => import('@features/quota/quota.page').then((m) => m.QuotaPage),
+        // Corporate quota = CRM SHARE_IN_GROUP groups shared by numbers; the page lives in features/pooling.
+        loadComponent: () => import('@features/pooling/pooling.page').then((m) => m.PoolingPage),
       },
       {
         path: 'billing',

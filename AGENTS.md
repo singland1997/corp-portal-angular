@@ -21,7 +21,8 @@ Angular 21 + PrimeNG 21 + Tailwind, ไทย/อังกฤษ เป็น fr
 
 ## สิ่งที่ AI มักพลาดใน repo นี้
 - `app.spec.ts` มี `http.verify()` ใน `afterEach`: หน้าที่ยิง request เพิ่มต้อง flush ใน test ไม่งั้น test อื่นพังต่อเนื่อง
-- Pool มาจาก CRM แก้ไขใน Portal ไม่ได้; ปุ่มปรับโควตาแสดงเมื่อ `capabilities.quotaAdjust` เป็นจริงเท่านั้น
+- ชื่อเมนูไม่ตรงกับชื่อโฟลเดอร์: เมนู **Data pool** (`/pooling`) = ก้อนที่องค์กรซื้อไว้ (CRM `CORPORATE_QUOTA`) ใช้หน้า `features/quota`; เมนู **Corporate quota** (`/quota`) = กลุ่มแชร์โควตา (CRM `SHARE_IN_GROUP`) ใช้หน้า `features/pooling` วงแหวนบน dashboard คือ data pool
+- ทั้งสองอย่างมาจาก CRM แก้ไขใน Portal ไม่ได้; ปุ่มปรับโควตาแสดงเมื่อ `capabilities.quotaAdjust` เป็นจริงเท่านั้น
 - ชื่อไทยที่ขึ้นต้นด้วยสระหน้า (เ แ โ ใ ไ) ต้องข้ามสระเมื่อทำอักษรย่อ
 - ข้อมูลจาก CRM อาจเป็นข้อความว่าง ไม่ใช่ `null`
 - ใช้ component PrimeNG ตัวใหม่ (`primeng/<name>`) ต้องเพิ่ม theme ของมันใน `core/theme/aura.preset.ts` ด้วย ไม่งั้นได้ CSS แต่ไม่มีตัวแปร theme หน้าตาจะเพี้ยน (เคยเกิดกับ tabs หน้า Data pooling)

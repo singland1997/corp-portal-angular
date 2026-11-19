@@ -1,5 +1,5 @@
 export const quotaEn = {
-  title: 'Corporate quota',
+  title: 'Data pool',
   history: 'Quota history',
   service: 'Service',
   total: 'Total quota',
@@ -19,7 +19,7 @@ export const quotaEn = {
   invalidDates: 'End date must be on or after start date.',
 };
 export const quotaTh: Record<keyof typeof quotaEn, string> = {
-  title: 'โควตาองค์กร',
+  title: 'ดาต้าพูล',
   history: 'ประวัติโควตา',
   service: 'บริการ',
   total: 'โควตาทั้งหมด',
