@@ -9,7 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { RouterLink } from '@angular/router';
 import { corporateResource } from '@core/api/corporate-resource';
@@ -30,8 +30,10 @@ import {
   DashboardSnapshot,
   isKnownOperation,
   crmStatusLabel,
+  fromIsoDate,
   presetRange,
   SimActivity,
+  toIsoDate,
 } from './dashboard.models';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -63,7 +65,7 @@ const PRESET_LABELS = {
     PageHeaderComponent,
     DialogModule,
     FormsModule,
-    InputTextModule,
+    DatePickerModule,
     SelectModule,
   ],
   templateUrl: './dashboard.page.html',
@@ -96,13 +98,25 @@ export class DashboardPage {
     },
     { equal: sameRange },
   );
-  readonly invalidCustom = computed(
-    () =>
-      this.preset() === 'custom' &&
-      !!this.customFrom() &&
-      !!this.customTo() &&
-      this.customFrom() > this.customTo(),
+  /** The custom range as the date picker's value (local dates). */
+  readonly customDates = computed(() =>
+    this.customFrom() && this.customTo()
+      ? [fromIsoDate(this.customFrom()), fromIsoDate(this.customTo())]
+      : null,
   );
+  /** Bounds of the date picker: the synced usage window. */
+  readonly windowDates = computed(() => {
+    const window = this.window();
+    return window ? { from: fromIsoDate(window.from), to: fromIsoDate(window.to) } : null;
+  });
+
+  /** The picker emits after each click; the range is applied once both ends are chosen. */
+  pickCustomDates(value: (Date | null)[] | null): void {
+    const [from, to] = value ?? [];
+    if (!from || !to) return;
+    this.customFrom.set(toIsoDate(from));
+    this.customTo.set(toIsoDate(to));
+  }
 
   /** โหลดใหม่อัตโนมัติเมื่อเปลี่ยนองค์กรหรือช่วงวันที่ */
   readonly resource = corporateResource((id) =>
@@ -114,7 +128,7 @@ export class DashboardPage {
   readonly snapshot = this.resource.data;
 
   constructor() {
-    // A new range reloads (the first run is the initial load). An unfinished or reversed custom
+    // A new range reloads (the first run is the initial load). An unfinished custom
     // range keeps what is on screen instead of falling back to the default.
     let first = true;
     effect(() => {
