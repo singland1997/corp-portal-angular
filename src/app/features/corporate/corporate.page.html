@@ -184,6 +184,8 @@
               <th scope="col" class="py-2 pr-4">{{ i18n.t('productName') }}</th>
               <th scope="col" class="py-2 pr-4">{{ i18n.t('packageType') }}</th>
               <th scope="col" class="py-2 pr-4">{{ i18n.t('packageQuotas') }}</th>
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('packageValidity') }}</th>
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('packageVat') }}</th>
               <th scope="col" class="py-2 pr-4">{{ i18n.t('packagePrice') }}</th>
               <th scope="col" class="py-2">{{ i18n.t('totalNumbers') }}</th>
             </tr>
@@ -202,6 +204,10 @@
                 </td>
                 <td class="py-2 pr-4">{{ item.packageType ?? unknownValue }}</td>
                 <td class="py-2 pr-4 whitespace-pre-line">{{ packageQuotaText(item.quotas) }}</td>
+                <td class="py-2 pr-4 whitespace-nowrap">
+                  {{ packageValidityText(item.validityValue, item.validityUnit) }}
+                </td>
+                <td class="py-2 pr-4 whitespace-nowrap">{{ packageVatText(item.vatType) }}</td>
                 <td class="py-2 pr-4">{{ packagePriceText(item.priceThb) }}</td>
                 <td class="py-2">{{ item.numbers }}</td>
               </tr>
