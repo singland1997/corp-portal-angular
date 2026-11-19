@@ -1,4 +1,4 @@
-import { addDays, crmStatusLabel, presetRange } from './dashboard.models';
+import { addDays, crmStatusLabel, fromIsoDate, presetRange, toIsoDate } from './dashboard.models';
 
 describe('dashboard date range presets', () => {
   it('end on the last synced day and stay inside the synced window', () => {
@@ -27,5 +27,12 @@ describe('CRM status labels', () => {
   it('turn CRM codes into words without inventing meaning', () => {
     expect(crmStatusLabel('PROVISIONED')).toBe('Provisioned');
     expect(crmStatusLabel('IN_USE')).toBe('In use');
+  });
+});
+
+describe('date picker conversion', () => {
+  it('round-trips local dates without a time-zone shift', () => {
+    expect(toIsoDate(fromIsoDate('2026-11-19'))).toBe('2026-11-19');
+    expect(fromIsoDate('2026-09-01').getDate()).toBe(1);
   });
 });

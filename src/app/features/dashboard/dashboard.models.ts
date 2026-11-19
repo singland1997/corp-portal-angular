@@ -84,3 +84,15 @@ export function crmStatusLabel(code: string): string {
   const words = code.toLowerCase().replaceAll('_', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** `YYYY-MM-DD` → local midnight (what the date picker shows and emits). */
+export function fromIsoDate(date: string): Date {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/** Local date → `YYYY-MM-DD` (no UTC shift, unlike `toISOString`). */
+export function toIsoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
