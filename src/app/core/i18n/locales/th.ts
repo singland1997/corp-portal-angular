@@ -107,6 +107,7 @@ export const th: Record<TranslationKey, string> = {
   packages: 'แพ็กเกจ',
   usage: 'ติดตามการใช้งาน',
   pooling: 'ดาต้าพูล',
+  myCorporates: 'องค์กรที่ดูแล',
   users: 'ผู้ใช้งาน',
   roles: 'บทบาทและสิทธิ์',
   reports: 'รายงาน',

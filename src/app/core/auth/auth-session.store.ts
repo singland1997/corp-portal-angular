@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { AuthSession, LoginResponse } from './auth.models';
+import { AuthSession, AuthUser, LoginResponse } from './auth.models';
 import { ApiResponseError } from '@core/api/api-response.error';
 import { RefreshTokenStore } from './refresh-token.store';
 
@@ -48,6 +48,14 @@ export class AuthSessionStore {
     this.state.set({ ...response, expiresAt: Date.now() + response.expiresIn * 1000 });
     this.refreshTokens.save(response.refreshToken);
     this.expiryTimer = setTimeout(() => this.clear(), response.expiresIn * 1000);
+  }
+
+  updateUser(user: AuthUser): void {
+    const session = this.state();
+    if (!session || user.id !== session.user.id || !user.corporates?.length) {
+      throw new ApiResponseError('Invalid user response');
+    }
+    this.state.set({ ...session, user });
   }
 
   token(): string | null {

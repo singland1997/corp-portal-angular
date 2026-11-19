@@ -1,0 +1,63 @@
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="t('title')" />
+  @if (error(); as message) {
+    <p-message severity="warn" role="alert">{{ message }}</p-message>
+  }
+  @if (choices.loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (choices.error(); as failure) {
+    <cp-feedback-state kind="error" [description]="i18n.t(failure)" (retry)="choices.reload()" />
+  } @else {
+    <cp-card [title]="t('mine')">
+      <ul class="divide-y divide-line">
+        @for (corporate of mine(); track corporate.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 py-3">
+            <span class="font-medium">{{ name(corporate) }}</span>
+            <p-button
+              [label]="t('release')"
+              severity="secondary"
+              [outlined]="true"
+              size="small"
+              [disabled]="onlyOne() || busyId() !== null"
+              [loading]="busyId() === corporate.id"
+              (onClick)="release(corporate)"
+            />
+          </li>
+        }
+      </ul>
+      @if (onlyOne()) {
+        <p class="mt-2 text-xs text-muted">{{ t('keepOne') }}</p>
+      }
+    </cp-card>
+    <cp-card [title]="t('available')" [subtitle]="t('availableHint')">
+      <p-iconfield class="mb-3 block max-w-96">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          class="w-full"
+          [placeholder]="t('search')"
+          [attr.aria-label]="t('search')"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+      </p-iconfield>
+      <ul class="divide-y divide-line">
+        @for (corporate of available(); track corporate.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 py-3">
+            <span>{{ name(corporate) }}</span>
+            <p-button
+              [label]="t('claim')"
+              icon="pi pi-plus"
+              size="small"
+              [disabled]="busyId() !== null"
+              [loading]="busyId() === corporate.id"
+              (onClick)="claim(corporate)"
+            />
+          </li>
+        } @empty {
+          <li class="py-3 text-sm text-muted">{{ t('none') }}</li>
+        }
+      </ul>
+    </cp-card>
+  }
+</div>

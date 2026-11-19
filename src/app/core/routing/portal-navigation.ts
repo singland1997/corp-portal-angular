@@ -19,6 +19,7 @@ export const workspaceNavigation: NavigationItem[] = [
   // { label: 'usage', path: '/usage', icon: 'pi-chart-line', starter: true },
   { label: 'corporateQuota', path: '/quota', icon: 'pi-chart-pie' },
   { label: 'pooling', path: '/pooling', icon: 'pi-database' },
+  { label: 'myCorporates', path: '/my-corporates', icon: 'pi-briefcase', roles: ['sales'] },
   { label: 'users', path: '/users', icon: 'pi-users', roles: ['admin'] },
   { label: 'billing', path: '/billing', icon: 'pi-receipt' },
   { label: 'reports', path: '/reports', icon: 'pi-file' },

@@ -106,6 +106,7 @@ export const en = {
   packages: 'Packages',
   usage: 'Usage monitoring',
   pooling: 'Data pool',
+  myCorporates: 'My corporates',
   users: 'Users',
   roles: 'Roles & permissions',
   reports: 'Reports',
