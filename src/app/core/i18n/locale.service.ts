@@ -25,6 +25,7 @@ export class LocaleService {
         emptyFilterMessage: this.t('empty'),
         accept: this.t('confirm'),
         reject: this.t('cancel'),
+        ...calendarNames(locale),
         aria: {
           firstPageLabel: this.t('firstPage'),
           lastPageLabel: this.t('lastPage'),
@@ -59,4 +60,22 @@ export class LocaleService {
       return 'en';
     }
   }
+}
+
+/** Month and day names for PrimeNG's date picker, from the browser (Gregorian in Thai too). */
+function calendarNames(locale: Locale) {
+  const tag = locale === 'th' ? 'th-TH-u-ca-gregory' : 'en-US';
+  const names = (options: Intl.DateTimeFormatOptions, dates: Date[]) =>
+    dates.map((date) => new Intl.DateTimeFormat(tag, { ...options, timeZone: 'UTC' }).format(date));
+  // 2023-01-01 was a Sunday: 7 days from there, 12 months of 2023.
+  const days = Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(2023, 0, 1 + i)));
+  const months = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2023, i, 1)));
+  return {
+    dayNames: names({ weekday: 'long' }, days),
+    dayNamesShort: names({ weekday: 'short' }, days),
+    dayNamesMin: names({ weekday: 'narrow' }, days),
+    monthNames: names({ month: 'long' }, months),
+    monthNamesShort: names({ month: 'short' }, months),
+    firstDayOfWeek: 0,
+  };
 }

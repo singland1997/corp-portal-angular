@@ -21,26 +21,20 @@
           size="small"
         />
         @if (preset() === 'custom') {
-          <input
-            pInputText
-            pSize="small"
-            type="date"
-            [attr.aria-label]="i18n.t('rangeFrom')"
-            [min]="window()?.from ?? ''"
-            [max]="window()?.to ?? ''"
-            [ngModel]="customFrom()"
-            (ngModelChange)="customFrom.set($event)"
-          />
-          <span aria-hidden="true">–</span>
-          <input
-            pInputText
-            pSize="small"
-            type="date"
-            [attr.aria-label]="i18n.t('rangeTo')"
-            [min]="window()?.from ?? ''"
-            [max]="window()?.to ?? ''"
-            [ngModel]="customTo()"
-            (ngModelChange)="customTo.set($event)"
+          <p-datepicker
+            selectionMode="range"
+            [ngModel]="customDates()"
+            (ngModelChange)="pickCustomDates($event)"
+            [minDate]="windowDates()?.from ?? null"
+            [maxDate]="windowDates()?.to ?? null"
+            [readonlyInput]="true"
+            [showIcon]="true"
+            iconDisplay="input"
+            dateFormat="d M yy"
+            [ariaLabel]="i18n.t('rangeCustom')"
+            appendTo="body"
+            size="small"
+            styleClass="w-64"
           />
         } @else {
           <span class="text-xs font-medium text-muted">
@@ -49,9 +43,6 @@
         }
       </div>
     </cp-page-header>
-    @if (invalidCustom()) {
-      <p role="alert" class="text-sm text-red-700">{{ i18n.t('invalidDateRange') }}</p>
-    }
     <section
       [attr.aria-label]="i18n.t('dashboard')"
       class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4"
