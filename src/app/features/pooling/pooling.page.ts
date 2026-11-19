@@ -31,7 +31,15 @@ import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.compo
 import { PoolingDataService } from './data-access/pooling-data.service';
 import { QuotaDialogComponent } from './dialogs/quota-dialog.component';
 import { PoolMessageKey } from './pooling.messages';
-import { DataPool, matchesDateRange, PoolMember, QuotaDirection } from './pooling.models';
+import {
+  DataPool,
+  matchesDateRange,
+  PoolMember,
+  PoolTransaction,
+  QuotaDirection,
+  transactionKind,
+} from './pooling.models';
+import { quotaActionLabel, signedAmount } from '@shared/utils/quota-history';
 import { downloadCsv, transactionsCsv } from './pooling.export';
 import { PoolingText } from './pooling.text';
 
@@ -147,9 +155,19 @@ export class PoolingPage {
       ),
     ].sort(),
   );
+  /** The kinds of transaction this pool actually has, named for people. */
   readonly typeOptions = computed(() => [
     { value: 'all', label: this.t('allTypes') },
-    ...(['increase', 'decrease'] as const).map((value) => ({ value, label: this.t(value) })),
+    ...[
+      ...new Set(
+        this.data
+          .transactions()
+          .filter((t) => t.poolId === this.pool()?.id)
+          .map(transactionKind),
+      ),
+    ]
+      .sort()
+      .map((value) => ({ value, label: this.transactionLabel(value) })),
   ]);
 
   // ---- ข้อมูลในตาราง ----
@@ -204,20 +222,28 @@ export class PoolingPage {
         (t) =>
           t.poolId === this.pool()?.id &&
           matchesDateRange(t.occurredAt, this.from(), this.to()) &&
-          (this.transactionType() === 'all' || t.type === this.transactionType()),
+          (this.transactionType() === 'all' || transactionKind(t) === this.transactionType()),
       );
   });
   readonly transactionRows = computed(() =>
     this.transactions().map((t) => ({
       ...t,
       date: this.text.formatDate(t.occurredAt),
-      typeLabel: t.type === 'increase' || t.type === 'decrease' ? this.t(t.type) : t.type,
+      typeLabel: this.transactionLabel(transactionKind(t)),
+      member: t.mobile ?? '—',
       afterQuantity: this.formatData(t.afterQuantityMb, 'GB'),
-      amount: this.formatData(t.amountMb, 'GB'),
+      amount: signedAmount(t.amountMb, (mb) => this.formatData(mb, 'GB')),
       total: this.formatData(t.totalAfterMb, 'GB'),
       remaining: this.formatData(t.remainingAfterMb, 'GB'),
     })),
   );
+
+  /** A CRM action in words; older API responses only have `increase`/`decrease`. */
+  private transactionLabel(kind: string): string {
+    return kind === 'increase' || kind === 'decrease'
+      ? this.t(kind)
+      : quotaActionLabel(kind, (key) => this.i18n.t(key));
+  }
 
   readonly inventory = computed(
     () =>
@@ -247,18 +273,52 @@ export class PoolingPage {
   );
   readonly transactionColumns = computed<
     TableColumn<ReturnType<typeof this.transactionRows>[number]>[]
-  >(() => [
-    { field: 'date', header: this.t('date') },
-    { field: 'typeLabel', header: this.t('type') },
-    { field: 'amount', header: this.t('change') },
-    { field: 'total', header: this.t('totalAfterDisplay') },
-    { field: 'remaining', header: this.t('remainingAfterDisplay') },
-    ...(this.transactions().some((t) => t.afterQuantityMb != null)
-      ? [{ field: 'afterQuantity' as const, header: this.t('afterQuantity') }]
-      : []),
-    { field: 'performedBy', header: this.t('actor') },
-    { field: 'reason', header: this.t('reason') },
-  ]);
+  >(() => {
+    // Columns the CRM never fills (total/remaining after, performed by) appear only once a row
+    // has a value; the raw description stays in the CSV export.
+    const has = (pick: (t: PoolTransaction) => unknown) =>
+      this.transactions().some((t) => pick(t) != null);
+    type Column = TableColumn<ReturnType<typeof this.transactionRows>[number]>;
+    return [
+      { field: 'date', header: this.t('date'), width: '11rem' },
+      { field: 'typeLabel', header: this.t('transactionActivity'), width: '11rem' },
+      { field: 'member', header: this.t('mobile'), width: '9rem' },
+      { field: 'amount', header: this.t('change'), width: '8rem', align: 'end', type: 'signed' },
+      ...(has((t) => t.afterQuantityMb)
+        ? [
+            {
+              field: 'afterQuantity',
+              header: this.t('balanceAfter'),
+              width: '9rem',
+              align: 'end',
+            } as Column,
+          ]
+        : []),
+      ...(has((t) => t.totalAfterMb)
+        ? [
+            {
+              field: 'total',
+              header: this.t('totalAfterDisplay'),
+              width: '9rem',
+              align: 'end',
+            } as Column,
+          ]
+        : []),
+      ...(has((t) => t.remainingAfterMb)
+        ? [
+            {
+              field: 'remaining',
+              header: this.t('remainingAfterDisplay'),
+              width: '9rem',
+              align: 'end',
+            } as Column,
+          ]
+        : []),
+      ...(has((t) => t.performedBy)
+        ? [{ field: 'performedBy', header: this.t('actor') } as Column]
+        : []),
+    ];
+  });
   readonly inventoryColumns = computed<TableColumn<ReturnType<typeof this.inventory>[number]>[]>(
     () => [{ field: 'name', header: this.t('inventory') }],
   );

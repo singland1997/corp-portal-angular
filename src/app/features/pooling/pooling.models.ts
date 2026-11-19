@@ -39,6 +39,10 @@ export interface PoolTransaction {
   poolId: string;
   /** `increase`/`decrease`, or the raw source action when the direction is unknown. */
   type: string;
+  /** CRM action (`TOPUP`, `DEACTIVATE_MEMBER`, …); absent in older API responses. */
+  action?: string | null;
+  /** Member number named in the CRM description (one of this corporate's subscribers). */
+  mobile?: string | null;
   occurredAt: string | null;
   amountMb: number | null;
   totalAfterMb: number | null;
@@ -103,3 +107,8 @@ export function matchesDateRange(iso: string | null, from: string, to: string): 
 }
 /** ย้ายไปใช้ร่วมกันที่ @shared/utils/csv แล้ว (คงไว้ให้ import เดิมใช้ได้) */
 export { csvCell } from '@shared/utils/csv';
+
+/** What the transaction is: the CRM action when known, else the older `increase`/`decrease`. */
+export function transactionKind(t: PoolTransaction): string {
+  return t.action?.trim() ? t.action.trim().toUpperCase() : t.type;
+}

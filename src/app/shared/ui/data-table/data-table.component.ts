@@ -123,6 +123,27 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
       return header;
     }),
   );
+  /** Fixed layout once a column sets a width: the same widths on every page. */
+  readonly tableClass = computed(() =>
+    !this.visibleRows().length
+      ? 'w-full'
+      : this.columns().some((column) => column.width)
+        ? 'min-w-[640px] table-fixed'
+        : 'min-w-[640px]',
+  );
+
+  /** Classes of one body cell: alignment, truncation in a fixed layout, and the sign colour. */
+  cellClass(column: TableColumn<TRow>, row: TRow): string {
+    const classes = ['whitespace-nowrap', 'text-sm'];
+    if (column.align === 'end') classes.push('text-right', 'tabular-nums');
+    if (this.columns().some((c) => c.width)) classes.push('overflow-hidden', 'text-ellipsis');
+    if (column.type === 'signed') {
+      const tone = signTone(row[column.field]);
+      if (tone) classes.push(tone === 'positive' ? 'text-emerald-700' : 'text-red-700');
+    }
+    return classes.join(' ');
+  }
+
   readonly columnCount = computed(
     () => this.columns().length + Number(this.selectable()) + Number(this.actions().length > 0),
   );
@@ -222,4 +243,12 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
       sortOrder: this.sortOrder(),
     });
   }
+}
+
+/** Sign of a change: a number, or text that starts with "+" / "−" / "-" (e.g. "+200 MB"). */
+export function signTone(value: unknown): 'positive' | 'negative' | null {
+  if (typeof value === 'number') return value > 0 ? 'positive' : value < 0 ? 'negative' : null;
+  if (typeof value !== 'string') return null;
+  const first = value.trim().charAt(0);
+  return first === '+' ? 'positive' : first === '−' || first === '-' ? 'negative' : null;
 }

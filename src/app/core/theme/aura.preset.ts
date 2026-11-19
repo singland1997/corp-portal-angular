@@ -25,6 +25,7 @@ import ripple from '@primeuix/themes/aura/ripple';
 import select from '@primeuix/themes/aura/select';
 import selectbutton from '@primeuix/themes/aura/selectbutton';
 import skeleton from '@primeuix/themes/aura/skeleton';
+import tabs from '@primeuix/themes/aura/tabs';
 import tag from '@primeuix/themes/aura/tag';
 import textarea from '@primeuix/themes/aura/textarea';
 import togglebutton from '@primeuix/themes/aura/togglebutton';
@@ -66,6 +67,7 @@ export const AuraPreset = {
     select,
     selectbutton,
     skeleton,
+    tabs,
     tag,
     textarea,
     togglebutton,

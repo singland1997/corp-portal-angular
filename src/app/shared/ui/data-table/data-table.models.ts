@@ -13,8 +13,12 @@ export interface TableColumn<TRow extends TableRow = PortalRow> {
   field: TableField<TRow>;
   header: string;
   sortable?: boolean;
-  type?: 'text' | 'status';
+  /** `signed`: a change shown with its sign; positive green, negative red (the sign stays the cue). */
+  type?: 'text' | 'status' | 'signed';
+  /** With any width set, the table uses a fixed layout so columns do not move between pages. */
   width?: string;
+  /** `end` right-aligns numbers so digits line up. */
+  align?: 'start' | 'end';
 }
 
 export interface TableHeader<TRow extends TableRow> extends TableColumn<TRow> {
