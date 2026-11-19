@@ -56,6 +56,12 @@ export const routes: Routes = [
         loadComponent: () => import('@features/quota/quota.page').then((m) => m.QuotaPage),
       },
       {
+        path: 'my-corporates',
+        canActivate: [roleGuard(['sales'])],
+        loadComponent: () =>
+          import('@features/my-corporates/my-corporates.page').then((m) => m.MyCorporatesPage),
+      },
+      {
         path: 'users',
         canActivate: [roleGuard(['admin'])],
         loadComponent: () => import('@features/users/users.page').then((m) => m.UsersPage),
