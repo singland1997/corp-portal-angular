@@ -84,7 +84,7 @@
       </cp-card>
       <section class="grid content-start gap-4 rounded-xl bg-zinc-800 p-5 text-white sm:p-6">
         <a
-          routerLink="/pooling"
+          routerLink="/data-pool"
           class="w-fit text-xs font-semibold tracking-wider text-yellow-300 uppercase hover:underline"
         >
           {{ i18n.t('poolTitle') }}
@@ -114,7 +114,6 @@
         <dl class="grid grid-cols-3 gap-2">
           @for (metric of poolMetrics(); track metric.label) {
             <div class="flex flex-col-reverse">
-              <!-- Label first for screen readers; shown under the value. -->
               <dt class="mt-1 text-xs text-zinc-300">{{ i18n.t(metric.label) }}</dt>
               <dd class="text-base font-semibold tabular-nums">{{ poolAmount(metric.value) }}</dd>
             </div>

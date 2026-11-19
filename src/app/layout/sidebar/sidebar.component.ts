@@ -8,7 +8,7 @@ import { MenuModule } from 'primeng/menu';
 import { LocaleService } from '@core/i18n/locale.service';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { AuthSessionStore } from '@core/auth/auth-session.store';
-import { canSee, resourceNavigation, workspaceNavigation } from '@core/routing/portal-navigation';
+import { canSee, workspaceNavigation } from '@core/routing/portal-navigation';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,10 +22,7 @@ export class SidebarComponent {
   readonly corporate = inject(CorporateContext);
   private readonly auth = inject(AuthSessionStore);
   readonly navigated = output<void>();
-  readonly groups = [
-    { title: 'workspace' as const, items: workspaceNavigation },
-    { title: 'resources' as const, items: resourceNavigation },
-  ];
+  readonly groups = [{ title: 'workspace' as const, items: workspaceNavigation }];
   readonly menuItems = computed<MenuItem[]>(() =>
     this.groups.map((group) => ({
       label: this.i18n.t(group.title),

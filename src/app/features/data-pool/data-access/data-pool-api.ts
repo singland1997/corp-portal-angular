@@ -13,7 +13,7 @@ import {
   text,
 } from '@core/api/response-validation';
 
-export interface QuotaBalance {
+export interface DataPoolBalance {
   id: string;
   service: string | null;
   unit: string | null;
@@ -26,7 +26,7 @@ export interface QuotaBalance {
   status: string | null;
   expired: boolean;
 }
-export interface QuotaTransaction {
+export interface DataPoolTransaction {
   id: string;
   occurredAt: string | null;
   action: string | null;
@@ -62,14 +62,14 @@ const transactionResponse = objectOf({
 });
 
 @Injectable({ providedIn: 'root' })
-export class QuotaApi {
+export class DataPoolApi {
   private readonly api = inject(ApiClient);
   summary(id: string) {
     return this.api
       .get<unknown>('/pools/corporate-quota', id)
       .pipe(
         map((value) =>
-          parseResponse<{ items: QuotaBalance[]; updatedAt: string }>(
+          parseResponse<{ items: DataPoolBalance[]; updatedAt: string }>(
             value,
             objectOf({ items: arrayOf(balanceResponse), updatedAt: dateText }),
             'corporate quota',
@@ -82,7 +82,7 @@ export class QuotaApi {
       .get<unknown>('/pools/corporate-quota/history/page', id, params)
       .pipe(
         map((value) =>
-          parseResponse<Page<QuotaTransaction>>(
+          parseResponse<Page<DataPoolTransaction>>(
             value,
             pageResponse(transactionResponse),
             'quota history',

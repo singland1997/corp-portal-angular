@@ -53,7 +53,6 @@ const PRESET_LABELS = {
   custom: 'rangeCustom',
 } as const satisfies Record<DashboardPreset, string>;
 
-/** หน้าแรกหลัง login: สรุปเลขหมาย, การใช้งานรายวัน และ data pool ขององค์กรปัจจุบัน */
 @Component({
   selector: 'cp-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,8 +72,6 @@ const PRESET_LABELS = {
 export class DashboardPage {
   readonly i18n = inject(LocaleService);
   private readonly repository = inject(DashboardRepository);
-
-  // ---- ช่วงวันที่ (default 7 วันล่าสุดที่ sync) ----
 
   readonly presets = computed(() =>
     DASHBOARD_PRESETS.map((value) => ({ value, label: this.i18n.t(PRESET_LABELS[value]) })),
@@ -98,13 +95,11 @@ export class DashboardPage {
     },
     { equal: sameRange },
   );
-  /** The custom range as the date picker's value (local dates). */
   readonly customDates = computed(() =>
     this.customFrom() && this.customTo()
       ? [fromIsoDate(this.customFrom()), fromIsoDate(this.customTo())]
       : null,
   );
-  /** Bounds of the date picker: the synced usage window. */
   readonly windowDates = computed(() => {
     const window = this.window();
     return window ? { from: fromIsoDate(window.from), to: fromIsoDate(window.to) } : null;
@@ -118,7 +113,6 @@ export class DashboardPage {
     this.customTo.set(toIsoDate(to));
   }
 
-  /** โหลดใหม่อัตโนมัติเมื่อเปลี่ยนองค์กรหรือช่วงวันที่ */
   readonly resource = corporateResource((id) =>
     this.repository.load(
       id,
@@ -156,8 +150,6 @@ export class DashboardPage {
     }
     this.preset.set(preset);
   }
-
-  // ---- ตัวเลขสรุป ----
 
   /** Pool values stay unknown (null) unless the API reports both quantities. */
   readonly poolKnown = computed(() => {
@@ -249,7 +241,6 @@ export class DashboardPage {
       ] as const,
   );
 
-  /** ป้ายแกน x ของกราฟรายวัน นับจาก `periodStart` ทีละวัน */
   readonly dailyLabels = computed(() => {
     const snapshot = this.snapshot();
     if (!snapshot) return [];
@@ -265,14 +256,11 @@ export class DashboardPage {
     );
   });
 
-  // ---- กราฟ ----
-
   readonly dailyRange = computed(() =>
     this.dailyLabels().length ? [this.dailyLabels()[0], this.dailyLabels().at(-1)].join(' – ') : '',
   );
   /** Last day of the selected range (the total and the chart both end here). */
   readonly periodEndLabel = computed(() => this.dailyLabels().at(-1) ?? '—');
-  /** First day of the selected range. */
   readonly periodStartLabel = computed(() => {
     const start = this.snapshot()?.periodStart;
     return start
@@ -293,7 +281,6 @@ export class DashboardPage {
     ),
   );
 
-  /** คำอธิบายกราฟสำหรับ screen reader */
   readonly usageChartLabel = computed(
     () =>
       `${this.i18n.t('dataTrend')}: ${(this.snapshot()?.dailyUsageGb ?? [])
@@ -312,7 +299,6 @@ export class DashboardPage {
     return isKnownOperation(item.operation) ? this.i18n.t(item.operation) : item.operation;
   }
 
-  /** RFC 3339 → Bangkok date/time. */
   activityTime(time: string): string {
     return new Intl.DateTimeFormat(this.i18n.locale() === 'th' ? 'th-TH-u-ca-gregory' : 'en-GB', {
       timeZone: 'Asia/Bangkok',

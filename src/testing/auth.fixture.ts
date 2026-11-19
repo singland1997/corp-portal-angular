@@ -32,4 +32,4 @@ export function testSession(admin = false, accessToken = 'test-token'): LoginRes
     },
   };
 }
-export const testEnvironment = { name: 'local' as const, production: false, apiBaseUrl: '/api' };
+export const testEnvironment = { name: 'local' as const, apiBaseUrl: '/api' };

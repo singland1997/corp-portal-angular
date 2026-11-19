@@ -56,12 +56,6 @@ export interface PoolTransaction {
 export interface PoolCapabilities {
   quotaAdjust: boolean;
 }
-export interface PoolInventoryItem {
-  id: string;
-  poolId: string;
-  name: string | null;
-  status?: string | null;
-}
 export interface QuotaDraft {
   direction: QuotaDirection;
   amount: number | null;

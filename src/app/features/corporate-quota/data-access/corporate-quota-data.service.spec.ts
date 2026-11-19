@@ -1,4 +1,10 @@
-import { csvCell, matchesDateRange, quotaError, DataPool, QuotaDraft } from '../pooling.models';
+import {
+  csvCell,
+  matchesDateRange,
+  quotaError,
+  DataPool,
+  QuotaDraft,
+} from '../corporate-quota.models';
 import { formatDataSize } from '@shared/utils/data-size';
 describe('Pooling presentation and validation', () => {
   const pool: DataPool = {

@@ -1,11 +1,11 @@
 import { toCsv } from '@shared/utils/csv';
-import { PoolTransaction } from './pooling.models';
-import { PoolingText } from './pooling.text';
+import { PoolTransaction } from './corporate-quota.models';
+import { CorporateQuotaText } from './corporate-quota.text';
 
 export { downloadCsv } from '@shared/utils/csv';
 
 /** สร้างไฟล์ CSV ของรายการธุรกรรม */
-export function transactionsCsv(transactions: PoolTransaction[], text: PoolingText): string {
+export function transactionsCsv(transactions: PoolTransaction[], text: CorporateQuotaText): string {
   const headings = [
     text.t('date'),
     text.t('type'),

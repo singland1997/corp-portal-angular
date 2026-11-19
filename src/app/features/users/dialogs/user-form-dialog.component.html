@@ -9,7 +9,6 @@
   [pt]="{ root: { class: 'w-[560px] max-w-[calc(100vw-2rem)]' } }"
 >
   <form class="grid gap-5" (ngSubmit)="submit()">
-    <!-- ประเภทผู้ใช้: เลือกได้ตอนสร้างเท่านั้น -->
     <div class="grid gap-2">
       <span id="user-type-label">
         {{ t('userType') }}
@@ -150,7 +149,6 @@
         }
       </div>
 
-      <!-- ผู้ใช้ยังไม่ตั้งรหัสผ่าน: ออกลิงก์ใหม่ได้ (ลิงก์เดิมจะใช้ไม่ได้) -->
       @if (user()?.status === 'pending') {
         <div class="grid gap-3 rounded-lg border border-line p-4">
           @if (invite(); as link) {

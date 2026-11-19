@@ -5,9 +5,6 @@ export interface NavigationItem {
   label: TranslationKey;
   path: string;
   icon: string;
-  /** ยังไม่ทำ: เปิดหน้า module-starter แทน */
-  starter?: boolean;
-  /** แสดงเฉพาะ role เหล่านี้ (ไม่ใส่ = ทุก role) */
   roles?: readonly AuthUser['role'][];
 }
 
@@ -15,21 +12,13 @@ export const workspaceNavigation: NavigationItem[] = [
   { label: 'dashboard', path: '/dashboard', icon: 'pi-home' },
   { label: 'inventory', path: '/corporate', icon: 'pi-building' },
   { label: 'sim', path: '/sim', icon: 'pi-mobile' },
-  // { label: 'packages', path: '/packages', icon: 'pi-box', starter: true },
-  // { label: 'usage', path: '/usage', icon: 'pi-chart-line', starter: true },
-  { label: 'corporateQuota', path: '/quota', icon: 'pi-chart-pie' },
-  { label: 'pooling', path: '/pooling', icon: 'pi-database' },
+  { label: 'corporateQuota', path: '/corporate-quota', icon: 'pi-chart-pie' },
+  { label: 'dataPool', path: '/data-pool', icon: 'pi-database' },
   { label: 'myCorporates', path: '/my-corporates', icon: 'pi-briefcase', roles: ['sales'] },
   { label: 'users', path: '/users', icon: 'pi-users', roles: ['admin'] },
   { label: 'billing', path: '/billing', icon: 'pi-receipt' },
   { label: 'reports', path: '/reports', icon: 'pi-file' },
-  // Requires user.manage on the server (System admin only).
   { label: 'roles', path: '/roles', icon: 'pi-shield', roles: ['admin'] },
-];
-
-export const resourceNavigation: NavigationItem[] = [
-  // { label: 'components', path: '/components', icon: 'pi-th-large' },
-  { label: 'api', path: '/api-docs', icon: 'pi-code' },
 ];
 
 export function canSee(item: NavigationItem, role: AuthUser['role'] | undefined): boolean {

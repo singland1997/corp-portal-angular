@@ -36,7 +36,6 @@ import {
   USER_STATUSES,
 } from '../users.models';
 
-/** created มีลิงก์ตั้งรหัสผ่านมาด้วย */
 export interface SavedEvent {
   kind: 'created' | 'saved';
   invite?: Invite;
@@ -44,12 +43,6 @@ export interface SavedEvent {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * Popup สร้าง/แก้ไขผู้ใช้ (ส่ง `user` มา = แก้ไข)
- *
- * - ประเภท Corporate → เลือกองค์กร (บทบาทเป็น Corp admin อัตโนมัติ)
- * - ประเภท Platform  → เลือกบทบาท System admin หรือ Sales
- */
 @Component({
   selector: 'cp-user-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -82,7 +75,6 @@ export class UserFormDialogComponent {
   readonly isEdit = computed(() => !!this.user());
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  /** ลิงก์ที่เพิ่งออกใหม่ในหน้าแก้ไข */
   readonly invite = signal<Invite | null>(null);
   draft: UserDraft = this.emptyDraft();
 
@@ -113,7 +105,6 @@ export class UserFormDialogComponent {
   );
 
   constructor() {
-    // เริ่มฟอร์มใหม่ทุกครั้งที่ popup เปิด
     effect(() => {
       if (this.visible()) untracked(() => this.reset());
     });
@@ -144,7 +135,6 @@ export class UserFormDialogComponent {
     }
   }
 
-  /** ออกลิงก์ตั้งรหัสผ่านใหม่ให้ผู้ใช้ที่ยังไม่ได้ตั้งรหัสผ่าน */
   async createInvite(): Promise<void> {
     const user = this.user();
     if (!user || this.busy()) return;
@@ -178,7 +168,6 @@ export class UserFormDialogComponent {
     };
   }
 
-  /** คืนข้อความ error หรือ null ถ้าข้อมูลครบ */
   private validate(): string | null {
     const d = this.draft;
     const missing =

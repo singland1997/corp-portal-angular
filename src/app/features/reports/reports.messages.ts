@@ -13,7 +13,6 @@ export const reportsEn = {
   search: 'Search in report',
   empty: 'No data for the selected period.',
 
-  // ---- ชื่อและคำอธิบายรายงาน ----
   packageStatus: 'Package status',
   packageStatusHint: 'SIMs on each package across all corporates.',
   simStatus: 'SIM status',
@@ -29,7 +28,6 @@ export const reportsEn = {
   packages: 'Package',
   packagesHint: 'Packages used by this corporate and what they include.',
 
-  // ---- หัวคอลัมน์ ----
   date: 'Date',
   dateTime: 'Date / time',
   package: 'Package',
@@ -57,7 +55,6 @@ export const reportsEn = {
   dataAllowance: 'Data (GB)',
   monthlyFee: 'Monthly fee (THB)',
 
-  // ---- ค่าในตาราง ----
   completed: 'Completed',
   pending: 'Pending',
   failed: 'Failed',

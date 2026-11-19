@@ -17,10 +17,6 @@ import { setPasswordEn, setPasswordTh } from './set-password.messages';
 
 const MIN_PASSWORD_CHARS = 12;
 
-/**
- * หน้าตั้งรหัสผ่านครั้งแรก เปิดจากลิงก์ `/set-password?token=...` ที่ admin ส่งให้ผู้ใช้ใหม่
- * ตั้งสำเร็จแล้วบัญชีเป็น Active และเข้าสู่ระบบได้
- */
 @Component({
   selector: 'cp-set-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,7 +37,6 @@ export class SetPasswordPage {
   private readonly i18n = inject(LocaleService);
   private readonly api = inject(AuthApi);
 
-  /** token จากลิงก์ (ไม่มี = ลิงก์ไม่ครบ) */
   readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
 
   readonly password = signal('');

@@ -24,12 +24,15 @@ import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state
 import { MeterComponent } from '@shared/ui/meter/meter.component';
 import { featureMessages } from '@shared/utils/feature-messages';
 import { formatDataSize } from '@shared/utils/data-size';
-import { QuotaApi, QuotaTransaction } from './data-access/quota-api';
+import { DataPoolApi, DataPoolTransaction } from './data-access/data-pool-api';
 import { quotaActionLabel, signedAmount } from '@shared/utils/quota-history';
-import { quotaEn, quotaTh } from './quota.messages';
+import { dataPoolEn, dataPoolTh } from './data-pool.messages';
 
 const QUOTA_COLUMN_LAYOUT: Partial<
-  Record<keyof QuotaTransaction, Pick<TableColumn<QuotaTransaction>, 'width' | 'align' | 'type'>>
+  Record<
+    keyof DataPoolTransaction,
+    Pick<TableColumn<DataPoolTransaction>, 'width' | 'align' | 'type'>
+  >
 > = {
   occurredAt: { width: '11rem' },
   action: { width: '11rem' },
@@ -38,7 +41,7 @@ const QUOTA_COLUMN_LAYOUT: Partial<
   balanceAfter: { width: '10rem', align: 'end' },
 };
 @Component({
-  selector: 'cp-quota-page',
+  selector: 'cp-data-pool-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
@@ -50,13 +53,13 @@ const QUOTA_COLUMN_LAYOUT: Partial<
     FeedbackStateComponent,
     MeterComponent,
   ],
-  templateUrl: './quota.page.html',
+  templateUrl: './data-pool.page.html',
 })
-export class QuotaPage {
+export class DataPoolPage {
   readonly i18n = inject(LocaleService);
-  readonly t = featureMessages(quotaEn, quotaTh);
+  readonly t = featureMessages(dataPoolEn, dataPoolTh);
   private readonly context = inject(CorporateContext);
-  private readonly api = inject(QuotaApi);
+  private readonly api = inject(DataPoolApi);
   readonly table = viewChild(DataTableComponent);
   readonly from = signal('');
   readonly to = signal('');
@@ -80,7 +83,7 @@ export class QuotaPage {
     ({ id, params }) => this.api.history(id, params),
   );
   readonly rows = computed(() => this.history.data()?.items ?? []);
-  readonly columns = computed<TableColumn<QuotaTransaction>[]>(() =>
+  readonly columns = computed<TableColumn<DataPoolTransaction>[]>(() =>
     (
       ['occurredAt', 'action', 'service', 'changeAmount', 'balanceAfter', 'description'] as const
     ).map((field) => ({
@@ -131,7 +134,7 @@ export class QuotaPage {
       : '—';
   }
 
-  cell(row: QuotaTransaction, field: keyof QuotaTransaction): string {
+  cell(row: DataPoolTransaction, field: keyof DataPoolTransaction): string {
     if (field === 'changeAmount')
       return signedAmount(row.changeAmount, (value) => this.amount(value, row.unit));
     if (field === 'balanceAfter') return this.amount(row[field], row.unit);

@@ -1,4 +1,4 @@
-export const quotaEn = {
+export const dataPoolEn = {
   title: 'Data pool',
   history: 'Quota history',
   service: 'Service',
@@ -18,7 +18,7 @@ export const quotaEn = {
   to: 'To',
   invalidDates: 'End date must be on or after start date.',
 };
-export const quotaTh: Record<keyof typeof quotaEn, string> = {
+export const dataPoolTh: Record<keyof typeof dataPoolEn, string> = {
   title: 'ดาต้าพูล',
   history: 'ประวัติโควตา',
   service: 'บริการ',

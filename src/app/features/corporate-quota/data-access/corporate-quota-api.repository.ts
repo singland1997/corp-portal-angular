@@ -7,21 +7,19 @@ import {
   PoolTransaction,
   QuotaDraft,
   toMegabytes,
-  PoolInventoryItem,
   PoolCapabilities,
-} from '../pooling.models';
-import type { PoolingRepository } from './pooling.repository';
+} from '../corporate-quota.models';
+import type { CorporateQuotaRepository } from './corporate-quota.repository';
 import { parseResponse } from '@core/api/response-validation';
 import {
   capabilitiesResponse,
-  inventoryResponse,
   membersResponse,
   poolsResponse,
   transactionsResponse,
-} from './pooling-response';
+} from './corporate-quota-response';
 
 @Injectable({ providedIn: 'root' })
-export class PoolingApiRepository implements PoolingRepository {
+export class CorporateQuotaApiRepository implements CorporateQuotaRepository {
   private readonly api = inject(ApiClient);
   load(corporateId: string) {
     return forkJoin({
@@ -36,13 +34,6 @@ export class PoolingApiRepository implements PoolingRepository {
         .pipe(
           map((value) =>
             parseResponse<PoolTransaction[]>(value, transactionsResponse, 'pool transactions'),
-          ),
-        ),
-      inventory: this.api
-        .get<unknown>('/pools/inventory', corporateId)
-        .pipe(
-          map((value) =>
-            parseResponse<PoolInventoryItem[]>(value, inventoryResponse, 'pool inventory'),
           ),
         ),
       capabilities: this.api

@@ -16,7 +16,6 @@
       </div>
 
       @if (step() === 'edit') {
-        <!-- ขั้นที่ 1: กรอกจำนวนและเหตุผล -->
         <dl class="grid grid-cols-2 gap-4 rounded-lg bg-zinc-50 p-4">
           <div>
             <dt class="text-xs text-muted">{{ text.t('total') }}</dt>
@@ -73,7 +72,6 @@
           ></textarea>
         </div>
       } @else {
-        <!-- ขั้นที่ 2: ตรวจทานก่อนยืนยัน -->
         <dl class="grid gap-4 rounded-lg border border-zinc-200 p-4">
           <div class="flex justify-between gap-3">
             <dt>{{ text.t('change') }}</dt>

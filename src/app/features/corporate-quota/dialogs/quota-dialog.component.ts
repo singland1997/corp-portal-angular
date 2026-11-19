@@ -19,7 +19,7 @@ import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
-import { PoolingDataService } from '../data-access/pooling-data.service';
+import { CorporateQuotaDataService } from '../data-access/corporate-quota-data.service';
 import {
   DataPool,
   PoolError,
@@ -27,12 +27,9 @@ import {
   QuotaDraft,
   quotaError,
   toMegabytes,
-} from '../pooling.models';
-import { PoolingText } from '../pooling.text';
+} from '../corporate-quota.models';
+import { CorporateQuotaText } from '../corporate-quota.text';
 
-/**
- * Dialog เพิ่ม/ลดโควตา 2 ขั้น: กรอกข้อมูล (edit) → ตรวจทาน (review) → ยืนยัน
- */
 @Component({
   selector: 'cp-quota-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,8 +51,8 @@ export class QuotaDialogComponent {
   readonly adjusted = output<void>();
 
   readonly i18n = inject(LocaleService);
-  readonly text = inject(PoolingText);
-  readonly data = inject(PoolingDataService);
+  readonly text = inject(CorporateQuotaText);
+  readonly data = inject(CorporateQuotaDataService);
   private readonly corporate = inject(CorporateContext);
 
   readonly units = ['MB', 'GB'];
@@ -65,7 +62,6 @@ export class QuotaDialogComponent {
   draft: QuotaDraft = this.emptyDraft();
 
   constructor() {
-    // เริ่มฟอร์มใหม่ทุกครั้งที่ dialog เปิด
     effect(() => {
       if (this.visible()) untracked(() => this.reset());
     });
@@ -78,7 +74,6 @@ export class QuotaDialogComponent {
     this.step.set('edit');
   }
 
-  /** จำนวน MB ที่จะเปลี่ยน (ติดลบเมื่อลดโควตา) */
   delta(): number {
     const sign = this.draft.direction === 'increase' ? 1 : -1;
     return toMegabytes(this.draft.amount, this.draft.unit) * sign;
@@ -109,7 +104,6 @@ export class QuotaDialogComponent {
     const corporateId = this.corporate.current()?.id;
     try {
       const error = await this.data.adjustQuota(this.poolId(), this.draft);
-      // ผู้ใช้เปลี่ยนองค์กรระหว่างรอ → ไม่ต้องทำอะไรต่อ
       if (corporateId !== this.corporate.current()?.id) return;
       this.error.set(error);
       if (!error) {

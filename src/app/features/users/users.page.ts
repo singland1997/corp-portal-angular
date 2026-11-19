@@ -27,13 +27,8 @@ import { InviteLinkComponent } from './invite-link/invite-link.component';
 import { ROLE_LABEL, usersEn, usersTh } from './users.messages';
 import { Invite, USER_ROLES, USER_STATUSES, UserRole, UserRow, UserStatus } from './users.models';
 
-/** แถวในตาราง = ข้อมูลผู้ใช้ + ข้อความที่แปลงแล้ว */
 type Row = UserRow & { no: number; corporateLabel: string; roleLabel: string };
 
-/**
- * หน้า User management (เฉพาะ System admin)
- * รายชื่อผู้ใช้ + ค้นหา + กรองตามองค์กร/บทบาท/สถานะ + popup สร้าง/แก้ไข
- */
 @Component({
   selector: 'cp-users-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,10 +50,6 @@ export class UsersPage {
   readonly t = featureMessages(usersEn, usersTh);
   private readonly api = inject(UsersApi);
   private readonly corporate = inject(CorporateContext);
-
-  // ---- โหลดข้อมูล ----
-
-  // ---- ตัวกรอง (ช่องค้นหาชื่อ/อีเมลอยู่ในตาราง) ----
 
   readonly corporateFilter = signal<string | null>(null);
   readonly roleFilter = signal<UserRole | null>(null);
@@ -94,8 +85,6 @@ export class UsersPage {
     ...USER_STATUSES.map((value) => ({ value, label: this.t(value) })),
   ]);
 
-  // ---- ตาราง ----
-
   readonly rows = computed<Row[]>(() =>
     this.users().map((user, index) => ({
       ...user,
@@ -119,12 +108,9 @@ export class UsersPage {
   ]);
   readonly actions = computed(() => [{ id: 'edit', label: this.t('edit'), icon: 'pi pi-pencil' }]);
 
-  // ---- popup และข้อความแจ้ง ----
-
   readonly formVisible = signal(false);
   readonly editingUser = signal<UserRow | undefined>(undefined);
   readonly notice = signal<'createdWithInvite' | 'saved' | null>(null);
-  /** ลิงก์ตั้งรหัสผ่านของผู้ใช้ที่เพิ่งสร้าง (แสดงครั้งเดียว) */
   readonly newInvite = signal<Invite | null>(null);
 
   constructor() {

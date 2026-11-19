@@ -55,7 +55,4 @@ export const transactionsResponse = arrayOf(
     reason: nullable(text),
   }),
 );
-export const inventoryResponse = arrayOf(
-  objectOf({ id: text, poolId: text, name: nullable(text), status: optional(nullable(text)) }),
-);
 export const capabilitiesResponse = objectOf({ quotaAdjust: bool });
