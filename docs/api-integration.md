@@ -85,7 +85,7 @@ Root font ใช้ `clamp(1rem, calc(0.75rem + 0.208333vw), 1.25rem)` ได้
 
 ผลตรวจวันที่ 6 พฤศจิกายน 2026: frontend unit tests 22 รายการ, deployment routing tests 3 รายการ, backend tests 25 รายการ และ Clippy ผ่าน ทดสอบ flow กับ backend จริงทั้ง 4 services: Login ทั้ง 3 บัญชี, ปฏิเสธข้ามองค์กร, Admin สลับองค์กร, เพิ่มพูล/โควตา, audit actor, Logout/revoke, สลับภาษาโดยอยู่ route เดิมครบ 11 เมนู และ responsive ตามขนาดข้างต้น
 
-Build local และ build ผ่านเส้นทาง Jenkins (`node scripts/build-ci.mjs prod`) สำเร็จ แต่ production initial bundle มี warning ขนาด 519.30 kB เกิน warning budget 500 kB อยู่ 19.30 kB ยังต่ำกว่า error budget 1 MB ไม่มีการเพิ่ม budget เพื่อซ่อน warning และยังไม่ได้ deploy AWS
+Build local และ build แบบเดียวกับ CI (`node scripts/build-ci.mjs prod`) สำเร็จ แต่ production initial bundle มี warning ขนาด 519.30 kB เกิน warning budget 500 kB อยู่ 19.30 kB ยังต่ำกว่า error budget 1 MB ไม่มีการเพิ่ม budget เพื่อซ่อน warning และยังไม่ได้ deploy AWS
 
 ## Request safety
 

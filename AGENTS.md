@@ -7,7 +7,8 @@ Angular 21 + PrimeNG 21 + Tailwind, ไทย/อังกฤษ เป็น fr
 
 ## คำสั่ง
 - Node 24 ตาม `.nvmrc` (`nvm install 24` ถ้ายังไม่มี)
-- ตรวจ: `npm run format` → `npm test -- --watch=false` → `npm run build` (skill `angular-check`)
+- ตรวจ: `bash scripts/ci/verify.sh dev` (CI รันตัวเดียวกัน) หรือ `npm run format` → `npm test -- --watch=false` → `npm run build` (skill `angular-check`)
+- Deploy: `.github/workflows/deploy.yml` → `scripts/ci/deploy.sh` ดู [docs/aws-deployment.md](docs/aws-deployment.md) ห้ามรัน `deploy` เองโดยไม่ได้สั่ง
 - ดูหน้าจริง: login ด้วยบัญชีของผู้ใช้เอง ห้ามพิมพ์รหัสผ่านแทน ตรวจทั้งมือถือ (375px) และ desktop
 
 ## กฎหน้าจอ

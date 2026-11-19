@@ -1,6 +1,6 @@
 # AWS deployment
 
-The frontend is a static Angular application on **private S3 + CloudFront**. Jenkins builds and publishes the browser files; Terraform manages the bucket, bucket policy, CloudFront distribution and SPA routing function. Docker, ECR, Nginx and a frontend Lambda are not needed for this deployment. Docker Compose remains available for local previews.
+The frontend is a static Angular application on **private S3 + CloudFront**. GitHub Actions builds and publishes the browser files; Terraform manages the bucket, bucket policy, CloudFront distribution and SPA routing function. Docker, ECR, Nginx and a frontend Lambda are not needed for this deployment. Docker Compose remains available for local previews.
 
 The backend belongs to a separate Lambda/API Gateway stack. This repository does not create Lambda functions, API routes or authentication services. The frontend calls APIs for authentication and business data. Only the backend local environment supplies test accounts and in-memory fixtures; dev/prod still require real identity and data providers.
 
@@ -8,7 +8,11 @@ The backend belongs to a separate Lambda/API Gateway stack. This repository does
 
 | File                                      | Responsibility                                                           |
 | ----------------------------------------- | ------------------------------------------------------------------------ |
-| `Jenkinsfile`                             | Verify, plan or deploy dev/prod                                          |
+| `.github/workflows/ci.yml`                | Pull requests and `main`: verify (format, tests, build) and Terraform    |
+| `.github/workflows/deploy.yml`            | Deploy dev on `main`; plan/deploy dev or prod by hand                    |
+| `scripts/ci/verify.sh`                    | `npm ci`, format check, deployment tests, unit tests, `build:ci <env>`   |
+| `scripts/ci/terraform-validate.sh`        | Offline `terraform fmt`/`init -backend=false`/`validate`                 |
+| `scripts/ci/deploy.sh`                    | Account check, Terraform plan/apply, `deploy:frontend`                   |
 | `infra/terraform/storage.tf`              | Private, encrypted, versioned S3 bucket and access policy                |
 | `infra/terraform/cdn.tf`                  | HTTPS CDN, OAC, cache policy and response headers                        |
 | `infra/terraform/functions/spa-router.js` | Angular deep links; assets and API paths stay separate                   |
@@ -16,26 +20,57 @@ The backend belongs to a separate Lambda/API Gateway stack. This repository does
 | `scripts/build-ci.mjs`                    | Build with public API settings, hashed filenames and no source maps      |
 | `scripts/deploy-frontend.mjs`             | Upload assets, publish index, invalidate CDN and check the deployed site |
 
-Terraform creates separate buckets and distributions for dev and prod. Jenkins uses state keys `corp-portal/dev/terraform.tfstate` and `corp-portal/prod/terraform.tfstate`. Use a Multibranch Pipeline: the `environmentsByBranch` map selects `dev` for branch `dev` and `prod` for branch `prod`. Change this map in Jenkinsfile if your branch names differ. Unknown branches, PRs and tags are rejected; use a separate verification job for PRs. Do not let multiple independent jobs publish to the same environment concurrently: Terraform's state lock covers infrastructure operations, not the subsequent S3 upload.
+The workflow files only call `scripts/ci/*.sh`, so the same steps can run from another CI (GitLab: a `.gitlab-ci.yml` that calls the scripts) or by hand on a trusted machine.
 
-## One-time Jenkins setup
+Terraform creates separate buckets and distributions for dev and prod, with state keys `corp-portal/dev/terraform.tfstate` and `corp-portal/prod/terraform.tfstate`. Each deploy run holds a concurrency lock per environment: Terraform's state lock covers infrastructure operations, not the subsequent S3 upload, so do not publish to one environment from two places at once.
 
-1. Use a trusted Linux Jenkins agent with label `corp-portal-deploy`, Node.js 24, npm 11, Terraform 1.10+ (below 2.0), and AWS CLI v2. Commit `package-lock.json` and `infra/terraform/.terraform.lock.hcl`. The pipeline uses the provider lock file in read-only mode.
-2. Connect the repository as a Multibranch Pipeline using `Jenkinsfile` and discover the `dev` and `prod` branches. Standard Pipeline, Git and Timestamper support is required. Only trusted branches/jobs should receive deployment credentials; pull requests from untrusted contributors must run on an agent without AWS privileges.
-3. Give the deployment agent temporary AWS credentials through an IAM role, workload identity, or your Jenkins credential integration. The AWS CLI and Terraform use the same standard AWS credential chain. Do not put AWS keys in source, build arguments, Angular settings or parameter defaults.
-4. Supply an existing **private, encrypted, versioned S3 state bucket**. The frontend Terraform root deliberately does not create its own state backend. Enable recovery/versioning and restrict access to your deployment role. If the state bucket uses a customer-managed KMS key, also grant the role the required KMS access.
-5. Set the parameters below. Run `verify`, then `plan` to review the changes. Selecting `deploy` applies the generated plan and publishes the application; the pipeline does not add another approval dialog.
+## How deploys run
 
-| Parameter         | Value                                                               |
-| ----------------- | ------------------------------------------------------------------- |
-| `ACTION`          | `verify` (default), `plan`, or `deploy`                             |
-| `AWS_ACCOUNT_ID`  | Your expected 12-digit deployment account; required for plan/deploy |
-| `AWS_REGION`      | Frontend bucket region; default `ap-southeast-1`                    |
-| `TF_STATE_BUCKET` | Existing state bucket name; required for plan/deploy                |
-| `TF_STATE_REGION` | State bucket region; default `ap-southeast-1`                       |
-| `API_BASE_URL`    | `/api` until a backend exists, then the public HTTPS API base URL   |
+| Trigger                                       | What happens                                                      |
+| --------------------------------------------- | ----------------------------------------------------------------- |
+| Pull request, push to `main`                  | `ci`: verify + Terraform validation, no AWS credentials           |
+| Push to `main`                                | `deploy`: deploy **dev** (skipped with a notice until configured) |
+| Actions → deploy → Run workflow (env, action) | `plan` or `deploy` for **dev** or **prod**                        |
 
-`verify` runs formatting checks, deployment routing tests, Angular tests, a build, and Terraform validation without AWS credentials. `plan` also reads AWS state and previews infrastructure changes. `deploy` additionally applies the plan, uploads the frontend, waits for CDN invalidation, and checks `/`, `/login`, `/corporate` and the entry JavaScript asset. Successful HTTP checks verify deployment/routing, not real backend authentication.
+Production is never deployed automatically; someone runs it by hand. Pull requests never receive AWS credentials.
+
+## One-time setup
+
+1. **OIDC provider:** in each AWS account, add the GitHub OIDC identity provider `token.actions.githubusercontent.com` (audience `sts.amazonaws.com`).
+2. **Deployment role per environment** that trusts that provider only for this repository and branch, for example:
+   ```json
+   {
+     "Effect": "Allow",
+     "Principal": {
+       "Federated": "arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com"
+     },
+     "Action": "sts:AssumeRoleWithWebIdentity",
+     "Condition": {
+       "StringEquals": {
+         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+         "token.actions.githubusercontent.com:sub": "repo:singland1997/corp-portal-angular:ref:refs/heads/main"
+       }
+     }
+   }
+   ```
+   Give it the permissions in [IAM scope](#iam-scope). No AWS keys are stored in GitHub.
+3. **State bucket:** an existing **private, encrypted, versioned S3 bucket**. The frontend Terraform root deliberately does not create its own state backend. Restrict access to the deployment roles; if it uses a customer-managed KMS key, grant the roles the required KMS access.
+4. **Repository variables** (Settings → Secrets and variables → Actions → Variables). They are prefixed with the environment because GitHub Environments are not available for private repositories on GitHub Free; a missing value never falls back to the other environment:
+
+| Variable                         | Value                                                             |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `DEV_AWS_ROLE_ARN` / `PROD_…`    | Deployment role ARN; without it the deploy job does nothing       |
+| `DEV_AWS_ACCOUNT_ID` / `PROD_…`  | Expected 12-digit account                                         |
+| `DEV_AWS_REGION` / `PROD_…`      | Frontend bucket region; default `ap-southeast-1`                  |
+| `DEV_TF_STATE_BUCKET` / `PROD_…` | Existing state bucket name                                        |
+| `DEV_TF_STATE_REGION` / `PROD_…` | State bucket region; default `ap-southeast-1`                     |
+| `DEV_API_BASE_URL` / `PROD_…`    | `/api` until a backend exists, then the public HTTPS API base URL |
+
+5. Run **deploy** by hand with `action = plan` for dev, review the plan in the log, then `deploy`.
+
+On GitHub Pro/Team (or after moving to GitLab), switch to per-environment variables with a required reviewer on `prod`, and restrict the prod role's `sub` to that environment (`repo:<owner>/<repo>:environment:prod`).
+
+`verify` runs formatting checks, deployment routing tests, Angular tests and a build without AWS credentials; Terraform validation runs offline. `plan` also reads AWS state and previews infrastructure changes. `deploy` additionally applies the plan, uploads the frontend, waits for CDN invalidation, and checks `/`, `/login`, `/corporate` and the entry JavaScript asset. Successful HTTP checks verify deployment/routing, not real backend authentication.
 
 ### IAM scope
 
@@ -45,13 +80,13 @@ Have the AWS administrator scope the deployment role to the selected environment
 - Infrastructure: the S3 bucket configuration/policy/tagging and CloudFront distribution, OAC, cache policy, response headers policy and function permissions needed by these resources, including read and update operations. Some CloudFront create/list actions require `Resource: "*"`; scope supported actions by ARN and tags. This is an operation inventory, not a ready-made IAM policy.
 - Publishing: `s3:ListBucket`, `s3:GetObject` and `s3:PutObject` on the frontend bucket; `cloudfront:CreateInvalidation` and `cloudfront:GetInvalidation` on its distribution. The upload does not delete objects.
 
-For separate AWS accounts, configure each job/agent role and state bucket access accordingly. `AWS_ACCOUNT_ID` is checked both by the pipeline and Terraform's provider allowlist. Deployment also checks Terraform outputs against the requested environment/account before uploading.
+For separate AWS accounts, configure each role and state bucket access accordingly. `AWS_ACCOUNT_ID` is checked by `deploy.sh` (against `aws sts get-caller-identity`) and by Terraform's provider allowlist. Deployment also checks Terraform outputs against the requested environment/account before uploading.
 
-`APP_ENV` and `TARGET_ENV` are set by Jenkinsfile from `BRANCH_NAME`, not selected manually. Account, region, API URL, state and credentials must still match the environment branch; branch selection does not provision or change those values automatically.
+`APP_ENV` and `TARGET_ENV` come from the environment chosen for the run. Account, region, API URL, state and role must still match that environment; choosing an environment does not provision or change those values.
 
 ## Environment settings and the future API
 
-Application environments are `local`, `dev`, and `prod`, with `src/environments/environment.local.ts`, `environment.dev.ts`, and `environment.prod.ts`. `npm start` and unit tests use `local` with source maps. Both hosted configurations (`dev` and `prod`) are optimized, hashed builds without source maps. Jenkins/Terraform deploy only `dev` and `prod`; `local` has no AWS stack. CI generates a temporary `environment.ci.ts`, combines the chosen Angular configuration with `ci`, and removes the file afterwards. Source maps are disabled and output hashes enabled for both hosted environments. API configuration is public and included in the built JavaScript; it never contains credentials.
+Application environments are `local`, `dev`, and `prod`, with `src/environments/environment.local.ts`, `environment.dev.ts`, and `environment.prod.ts`. `npm start` and unit tests use `local` with source maps. Both hosted configurations (`dev` and `prod`) are optimized, hashed builds without source maps. CI/Terraform deploy only `dev` and `prod`; `local` has no AWS stack. `build:ci` generates a temporary `environment.ci.ts`, combines the chosen Angular configuration with `ci`, and removes the file afterwards. Source maps are disabled and output hashes enabled for both hosted environments. API configuration is public and included in the built JavaScript; it never contains credentials.
 
 Example local CI-equivalent build in PowerShell:
 
@@ -70,19 +105,17 @@ The initial URL uses CloudFront's AWS-provided HTTPS domain. Terraform outputs `
 
 CloudFront authenticates to the S3 REST origin using OAC. S3 website hosting and public bucket access stay disabled. Extensionless Angular routes are rewritten to `/index.html`; requests for missing `.js`, `.css`, fonts and images retain their original error response. `index.html` has `no-cache,no-store,must-revalidate`; the cache policy has a minimum TTL of zero so it respects that header. Assets have a one-hour cache lifetime and a full invalidation runs after publishing.
 
-The pipeline uploads assets first, then index, and keeps previous chunks. This supports users with a previously loaded page and allows re-publishing an older build. Jenkins archives each build's browser output; to roll back, restore the selected artifact into `dist/corp-portal-ui/browser` in a trusted deployment workspace initialized with the correct Terraform backend, then run `npm run deploy:frontend` with the matching `TARGET_ENV` and `AWS_ACCOUNT_ID`. This re-publishes the frontend only; it does not roll back infrastructure. Check that the artifact contains the intended environment/API settings. Decide an asset/version retention period before adding any cleanup job.
+The deploy uploads assets first, then index, and keeps previous chunks. This supports users with a previously loaded page and allows re-publishing an older build. To roll back, run **deploy** by hand from the commit to restore (Run workflow → "Use workflow from" a branch or tag at that commit), or check that commit out on a trusted machine with the role's credentials and run `bash scripts/ci/verify.sh <env>` then `bash scripts/ci/deploy.sh deploy <env>`. This re-publishes the frontend and re-applies that commit's infrastructure definition. Check that the build contains the intended environment/API settings. Decide an asset/version retention period before adding any cleanup job.
 
-The bucket cannot be force-destroyed while it contains objects. Infrastructure/state files and generated plans are not deployment assets; only `dist/corp-portal-ui/browser` is uploaded. Pipeline plan files are removed afterwards and not archived.
+The bucket cannot be force-destroyed while it contains objects. Infrastructure/state files and generated plans are not deployment assets; only `dist/corp-portal-ui/browser` is uploaded. `deploy.sh` deletes the plan file when it exits and never uploads it.
 
 ## Local Terraform checks
 
 ```sh
-terraform -chdir=infra/terraform fmt -check -recursive
-terraform -chdir=infra/terraform init -backend=false -lockfile=readonly
-terraform -chdir=infra/terraform validate
+bash scripts/ci/terraform-validate.sh
 npm run test:deployment
 ```
 
-When intentionally upgrading the provider, run `terraform init -backend=false -upgrade`, review the plan, refresh lock checksums for your agent platforms with `terraform providers lock -platform=linux_amd64 -platform=windows_amd64`, and commit the lock file. Normal pipeline runs never upgrade it automatically.
+When intentionally upgrading the provider, run `terraform init -backend=false -upgrade`, review the plan, refresh lock checksums for the CI and developer platforms with `terraform providers lock -platform=linux_amd64 -platform=windows_amd64`, and commit the lock file. Normal CI runs never upgrade it automatically.
 
-References: [AWS S3 origin access control](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html), [CloudFront URL rewrites](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/example_cloudfront_functions_url_rewrite_single_page_apps_section.html), [Terraform S3 backend and state locking](https://developer.hashicorp.com/terraform/language/backend/s3), [Jenkins Declarative Pipeline](https://www.jenkins.io/doc/book/pipeline/syntax/).
+References: [AWS S3 origin access control](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html), [CloudFront URL rewrites](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/example_cloudfront_functions_url_rewrite_single_page_apps_section.html), [Terraform S3 backend and state locking](https://developer.hashicorp.com/terraform/language/backend/s3), [GitHub Actions OIDC with AWS](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services).
