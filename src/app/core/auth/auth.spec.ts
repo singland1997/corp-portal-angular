@@ -135,7 +135,7 @@ describe('API authentication and corporate context', () => {
     expect(guard()).toBe(true);
     const guest = TestBed.runInInjectionContext(() =>
       guestGuard(
-        { queryParamMap: convertToParamMap({ returnUrl: '/pooling' }) } as ActivatedRouteSnapshot,
+        { queryParamMap: convertToParamMap({ returnUrl: '/data-pool' }) } as ActivatedRouteSnapshot,
         {} as RouterStateSnapshot,
       ),
     );
@@ -161,7 +161,7 @@ describe('API authentication and corporate context', () => {
     expect(sessionStorage.getItem('corp-portal.refresh-token')).toBe('b'.repeat(64));
     expect(
       TestBed.runInInjectionContext(() =>
-        authGuard({} as ActivatedRouteSnapshot, { url: '/pooling' } as RouterStateSnapshot),
+        authGuard({} as ActivatedRouteSnapshot, { url: '/data-pool' } as RouterStateSnapshot),
       ),
     ).toBe(true);
   });

@@ -202,19 +202,8 @@
               <dd class="mt-1">{{ formatDate(selected.expiresAt) }}</dd>
             </div>
           </dl>
-          <div class="mt-5">
-            <p-button
-              [label]="t('inventory')"
-              [ariaLabel]="t('inventory')"
-              icon="pi pi-list"
-              severity="secondary"
-              [outlined]="true"
-              (onClick)="inventoryVisible.set(true)"
-            />
-          </div>
         </cp-card>
       </div>
-      <!-- min-w-0: a grid item otherwise grows to its widest table instead of letting it scroll. -->
       <p-tabs value="members" class="min-w-0">
         <p-tablist>
           <p-tab value="members">{{ t('members') }}</p-tab>
@@ -337,34 +326,6 @@
     (adjusted)="onQuotaAdjusted()"
   />
 
-  <p-dialog
-    [visible]="inventoryVisible()"
-    (visibleChange)="inventoryVisible.set($event)"
-    [header]="t('inventory')"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [closeAriaLabel]="t('close')"
-    [pt]="{ root: { class: 'w-[560px] max-w-[calc(100vw-2rem)]' } }"
-  >
-    @if (inventory().length) {
-      <cp-data-table [rows]="inventory()" [columns]="inventoryColumns()" [label]="t('inventory')" />
-    } @else {
-      <div class="grid gap-3 py-6 text-center">
-        <i class="pi pi-inbox text-3xl text-muted" aria-hidden="true"></i>
-        <h3 class="font-semibold">{{ t('inventoryEmpty') }}</h3>
-        <p class="text-sm text-muted">{{ t('inventoryHint') }}</p>
-      </div>
-    }
-    <div class="flex justify-end">
-      <p-button
-        [label]="t('close')"
-        [ariaLabel]="t('close')"
-        severity="secondary"
-        (onClick)="inventoryVisible.set(false)"
-      />
-    </div>
-  </p-dialog>
   <p-dialog
     [visible]="member() !== null"
     (visibleChange)="!$event && member.set(null)"

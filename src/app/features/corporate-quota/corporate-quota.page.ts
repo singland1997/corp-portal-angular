@@ -28,9 +28,9 @@ import { TableActionEvent, TableColumn } from '@shared/ui/data-table/data-table.
 import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
-import { PoolingDataService } from './data-access/pooling-data.service';
+import { CorporateQuotaDataService } from './data-access/corporate-quota-data.service';
 import { QuotaDialogComponent } from './dialogs/quota-dialog.component';
-import { PoolMessageKey } from './pooling.messages';
+import { CorporateQuotaMessageKey } from './corporate-quota.messages';
 import {
   DataPool,
   matchesDateRange,
@@ -38,29 +38,19 @@ import {
   PoolTransaction,
   QuotaDirection,
   transactionKind,
-} from './pooling.models';
+} from './corporate-quota.models';
 import { quotaActionLabel, signedAmount } from '@shared/utils/quota-history';
-import { downloadCsv, transactionsCsv } from './pooling.export';
-import { PoolingText } from './pooling.text';
+import { downloadCsv, transactionsCsv } from './corporate-quota.export';
+import { CorporateQuotaText } from './corporate-quota.text';
 
-/** Fixture department keys that have translations; other names are shown as stored. */
 const DEPARTMENT_KEYS = ['field', 'logistics', 'sales', 'other'] as const;
-/** Filter value for members without a department. */
 const NO_DEPARTMENT = '__none__';
-/** สีกราฟโดนัท: ใช้ไป / เหลือ / เกินโควตา */
 const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
 
-/**
- * หน้า Data Pool มี 2 โหมดตาม query `?pool=<id>`
- * - ไม่มี `pool` → รายการ pool
- * - มี `pool`   → รายละเอียด pool นั้น
- *
- * Dialog สร้าง/แก้ pool และปรับโควตาแยกอยู่ใน `dialogs/`
- */
 @Component({
-  selector: 'cp-pooling-page',
+  selector: 'cp-corporate-quota-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [PoolingDataService, PoolingText],
+  providers: [CorporateQuotaDataService, CorporateQuotaText],
   imports: [
     FormsModule,
     DecimalPipe,
@@ -79,21 +69,19 @@ const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
     StatusBadgeComponent,
     QuotaDialogComponent,
   ],
-  templateUrl: './pooling.page.html',
+  templateUrl: './corporate-quota.page.html',
 })
-export class PoolingPage {
+export class CorporateQuotaPage {
   readonly i18n = inject(LocaleService);
-  readonly data = inject(PoolingDataService);
+  readonly data = inject(CorporateQuotaDataService);
   readonly corporate = inject(CorporateContext);
-  private readonly text = inject(PoolingText);
+  private readonly text = inject(CorporateQuotaText);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly document = inject(DOCUMENT);
   private readonly params = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
   });
-
-  // ---- pool ที่เลือก ----
 
   readonly detailMode = computed(() => this.params().has('pool'));
   readonly pool = computed(
@@ -127,8 +115,6 @@ export class PoolingPage {
   });
   readonly canDecrease = computed(() => this.canIncrease() && (this.remaining() ?? 0) > 0);
 
-  // ---- ตัวกรอง ----
-
   readonly filterStatus = signal('all');
   readonly department = signal('all');
   readonly from = signal('');
@@ -145,7 +131,6 @@ export class PoolingPage {
     ...this.departmentNames().map((value) => ({ value, label: this.departmentLabel(value) })),
     { value: NO_DEPARTMENT, label: this.t('unassigned') },
   ]);
-  /** Distinct department names of the selected pool's members. */
   readonly departmentNames = computed(() =>
     [
       ...new Set(
@@ -169,8 +154,6 @@ export class PoolingPage {
       .sort()
       .map((value) => ({ value, label: this.transactionLabel(value) })),
   ]);
-
-  // ---- ข้อมูลในตาราง ----
 
   readonly pools = computed(() =>
     this.data
@@ -245,13 +228,6 @@ export class PoolingPage {
       : quotaActionLabel(kind, (key) => this.i18n.t(key));
   }
 
-  readonly inventory = computed(
-    () =>
-      this.data.resource.data()?.inventory.filter((item) => item.poolId === this.pool()?.id) ?? [],
-  );
-
-  // ---- คอลัมน์และปุ่มในตาราง ----
-
   readonly poolColumns = computed<TableColumn<ReturnType<typeof this.pools>[number]>[]>(() => [
     { field: 'name', header: this.t('poolName'), sortable: true },
     { field: 'lot', header: this.t('lot') },
@@ -319,17 +295,12 @@ export class PoolingPage {
         : []),
     ];
   });
-  readonly inventoryColumns = computed<TableColumn<ReturnType<typeof this.inventory>[number]>[]>(
-    () => [{ field: 'name', header: this.t('inventory') }],
-  );
   readonly poolActions = computed(() => [
     { id: 'details', label: this.t('details'), icon: 'pi pi-eye' },
   ]);
   readonly memberActions = computed(() => [
     { id: 'details', label: this.t('details'), icon: 'pi pi-eye' },
   ]);
-
-  // ---- กราฟ ----
 
   readonly chartData = computed<ChartData<'doughnut'>>(() => {
     const p = this.pool();
@@ -357,24 +328,20 @@ export class PoolingPage {
     },
   };
 
-  // ---- dialog และข้อความแจ้ง ----
-
   readonly quotaVisible = signal(false);
   readonly quotaPoolId = signal('');
   readonly quotaDirection = signal<QuotaDirection>('increase');
-  readonly inventoryVisible = signal(false);
   readonly member = signal<PoolMember | null>(null);
   readonly notice = signal<'saved' | 'adjusted' | null>(null);
 
   constructor() {
-    // เปลี่ยนองค์กร → ปิด dialog และล้างตัวกรองทั้งหมด
     effect(() => {
       this.corporate.current()?.id;
       untracked(() => this.resetForCorporate());
     });
   }
 
-  t(key: PoolMessageKey): string {
+  t(key: CorporateQuotaMessageKey): string {
     return this.text.t(key);
   }
 
@@ -405,9 +372,6 @@ export class PoolingPage {
     return total && total > 0 ? (used / total) * 100 : 0;
   }
 
-  // ---- การเลือกและนำทาง ----
-
-  /** ปุ่มในตาราง pool: ดูรายละเอียด (pool มาจาก CRM แก้ไขใน Portal ไม่ได้) */
   onPoolAction(event: TableActionEvent<DataPool>): void {
     this.clearTransactionFilters();
     this.department.set('all');
@@ -418,8 +382,6 @@ export class PoolingPage {
   back(): void {
     this.setPoolQuery(null);
   }
-
-  // ---- dialog ----
 
   openQuota(direction: QuotaDirection): void {
     const pool = this.pool();
@@ -433,8 +395,6 @@ export class PoolingPage {
     this.clearTransactionFilters();
     this.notice.set('adjusted');
   }
-
-  // ---- ธุรกรรม ----
 
   clearTransactionFilters(): void {
     this.from.set('');
@@ -457,7 +417,6 @@ export class PoolingPage {
 
   private resetForCorporate(): void {
     this.quotaVisible.set(false);
-    this.inventoryVisible.set(false);
     this.member.set(null);
     this.notice.set(null);
     this.filterStatus.set('all');

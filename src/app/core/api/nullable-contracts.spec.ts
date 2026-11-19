@@ -13,8 +13,12 @@ import {
   membersResponse,
   poolsResponse,
   transactionsResponse,
-} from '@features/pooling/data-access/pooling-response';
-import { DataPool, matchesDateRange, quotaError } from '@features/pooling/pooling.models';
+} from '@features/corporate-quota/data-access/corporate-quota-response';
+import {
+  DataPool,
+  matchesDateRange,
+  quotaError,
+} from '@features/corporate-quota/corporate-quota.models';
 import { apiErrorMessage } from './api-error';
 
 const number = (overrides: Partial<MobileNumber>): MobileNumber => ({

@@ -1,63 +1,50 @@
 # Corp Portal UI
 
-เว็บจัดการองค์กร ซิม แพ็กเกจ และการใช้งาน พัฒนาด้วย **Angular 21 + PrimeNG 21 + Tailwind CSS** รองรับไทยและอังกฤษ
+Angular 21 + PrimeNG + Tailwind หน้าเว็บของ Corp Portal (ไทย/อังกฤษ) เรียก API จาก [corp-portal-api](https://github.com/singland1997/corp-portal-api)
 
-## เริ่มใช้งาน
+## รันในเครื่อง
 
-ใช้ **Node.js 24 / npm 11** เปิด backend ทั้ง 4 services ก่อน แล้วรันในโฟลเดอร์นี้:
+Node 24 (`.nvmrc`) และเปิด API ทั้ง 4 services ก่อน
 
 ```sh
 npm ci
-npm start
+npm start          # http://localhost:4200, /api ส่งต่อตาม proxy.conf.json
 ```
 
-เข้า http://localhost:4200 ไม่มีบัญชีสำเร็จรูป: ผู้ดูแลคนแรกสร้างด้วย `cargo run --locked -p identity-service --bin create-admin` ในโปรเจกต์ backend (ตั้ง `IDENTITY_ADMIN_EMAIL`, `IDENTITY_ADMIN_NAME`) แล้วเปิด `http://localhost:4200/set-password?token=<token ที่พิมพ์ออกมา>` เพื่อตั้งรหัสผ่าน ผู้ใช้อื่นสร้างจากหน้า Users
+ผู้ใช้คนแรก: สร้างด้วย `create-admin` ใน API แล้วเปิด `/set-password?token=<token>`
 
-## คำสั่งที่ใช้บ่อย
+## ตรวจ
 
-| คำสั่ง                      | หน้าที่                           |
-| --------------------------- | --------------------------------- |
-| `npm start`                 | รัน local พร้อมอัปเดตเมื่อแก้โค้ด |
-| `npm run start:dev`         | รันด้วยค่า dev บนเครื่อง          |
-| `npm run build:dev`         | Build สำหรับ dev                  |
-| `npm run build:prod`        | Build สำหรับ prod                 |
-| `npm test -- --watch=false` | รัน unit tests                    |
-| `npm run format`            | จัดรูปแบบโค้ดและเอกสาร            |
+```sh
+bash scripts/ci/verify.sh dev     # format, test, build (CI ใช้ตัวเดียวกัน)
+```
 
-ไฟล์สำหรับ deploy อยู่ที่ `dist/corp-portal-ui/browser`
+## โครงสร้าง
 
-## แก้โค้ดตรงไหน
+```
+src/app/features/<feature>/   หน้าจอ + data-access (เรียก API) ของแต่ละเมนู
+src/app/shared/ui/            component กลาง (card, data-table, chart, …)
+src/app/core/                 auth, API client, ภาษา, ธีม, เมนู
+src/app/layout/               header, sidebar
+```
 
-| ตำแหน่ง                                     | ใช้ทำอะไร                                             |
-| ------------------------------------------- | ----------------------------------------------------- |
-| `src/app/features/`                         | หน้าจอและการทำงานแต่ละโมดูล เริ่มแก้งานส่วนใหญ่ที่นี่ |
-| `features/<ชื่อโมดูล>/data-access/`         | เรียก API ของโมดูล                                    |
-| `src/app/shared/ui/`                        | Component กลาง เช่น card, table, form และ dialog      |
-| `src/app/core/`                             | Auth, API client, ภาษา และธีม                         |
-| `src/app/layout/`                           | Header, sidebar, footer และโครงหน้า                   |
-| `src/app/app.routes.ts`                     | เพิ่มเส้นทางหน้าจอ                                    |
-| `src/app/core/routing/portal-navigation.ts` | เพิ่มเมนู                                             |
-| `src/environments/`                         | ค่า local, dev และ prod                               |
-| `public/`                                   | รูป โลโก้ และไฟล์ static                              |
+| เมนู                  | Feature           | ข้อมูล CRM                    |
+| --------------------- | ----------------- | ----------------------------- |
+| Dashboard             | `dashboard`       | เลขหมาย, การใช้งาน, Data pool |
+| Inventory             | `corporate`       | องค์กร, lot, เลขหมาย, แพ็กเกจ |
+| Corporate quota       | `corporate-quota` | `SHARE_IN_GROUP`              |
+| Data pool             | `data-pool`       | `CORPORATE_QUOTA`             |
+| My corporates (sales) | `my-corporates`   | sales เลือกองค์กรที่ดูแล      |
 
-แยก TypeScript กับ HTML ใช้ PrimeNG และ Tailwind เป็นหลัก ส่วน component กลางรับข้อมูลและส่ง event กลับ ให้ feature เป็นผู้เรียก API
+## Deploy
 
-เพิ่ม PrimeNG component ใหม่ ให้เพิ่มธีมที่ใช้ใน `core/theme/aura.preset.ts` ด้วย ดูตัวอย่างการใช้ส่วนกลางใน [คู่มือ UI](docs/ui-guide.md)
+S3 + CloudFront ผ่าน GitHub Actions: merge เข้า `main` deploy dev เอง, prod สั่งเองที่ Actions → deploy
 
-## สิ่งที่ควรรู้
+ตั้งครั้งแรกต่อ environment (AWS account):
 
-- Login ผ่าน API สำเร็จแล้วไป Dashboard; รีเฟรชหน้าใช้ refresh token ใน sessionStorage เพื่อกู้ session
-- Admin จัดการผู้ใช้ได้ ฝ่ายขายเข้าถึงเฉพาะองค์กรที่มอบหมาย และหนึ่งองค์กรมีฝ่ายขายดูแลได้คนเดียว
-- ข้อมูลทดสอบอยู่หลังบ้านใน memory เมื่อ restart backend ข้อมูลที่แก้และ session จะหาย
-- Local ส่ง `/api` ผ่าน `proxy.conf.json` หากแก้ proxy ให้ restart frontend
-- CI/CD ใช้ GitHub Actions (`.github/workflows/`, ขั้นตอนจริงใน `scripts/ci/`): merge เข้า `main` deploy dev อัตโนมัติ, prod สั่งเอง; ห้ามใส่ secret ใน Angular environment
-- Frontend deploy บน S3 + CloudFront ดู [คู่มือ AWS และ deploy](docs/aws-deployment.md)
+1. เพิ่ม OIDC provider `token.actions.githubusercontent.com` (audience `sts.amazonaws.com`)
+2. สร้าง role ที่ trust เฉพาะ `repo:singland1997/corp-portal-angular:ref:refs/heads/main` ให้สิทธิ์ S3 bucket/CloudFront ของ Terraform ใน `infra/terraform` และ state bucket
+3. ตั้ง repository variables (`DEV_` / `PROD_`): `AWS_ROLE_ARN`, `AWS_ACCOUNT_ID`, `AWS_REGION`, `TF_STATE_BUCKET`, `TF_STATE_REGION`, `API_BASE_URL`
+4. รัน deploy ด้วย `action = plan` ตรวจแล้วค่อย `deploy`
 
-## เอกสารเพิ่มเติม
-
-- [วิธีทำงานกับ AI (AI-native SDLC), คำสั่งตรวจ และสิ่งที่มักพลาด](AGENTS.md) · [เกณฑ์ review](REVIEW.md) · งานแต่ละชิ้นอยู่ที่ `docs/work/`
-- [Component กลาง ภาษา และธีม](docs/ui-guide.md)
-- [การเชื่อม API และข้อจำกัดปัจจุบัน](docs/api-integration.md)
-- [Pooling](docs/pooling.md)
-- [Docker สำหรับทดลองในเครื่อง](docs/local-docker.md)
-- [AWS, Terraform และ GitHub Actions](docs/aws-deployment.md)
+ห้ามใส่ secret ใน `src/environments` (ทุกค่าอยู่ใน JavaScript ที่ deploy)

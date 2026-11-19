@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
-import { workspaceNavigation } from '@core/routing/portal-navigation';
 
 export const routes: Routes = [
   {
@@ -18,7 +17,6 @@ export const routes: Routes = [
       ),
   },
   {
-    // ลิงก์ตั้งรหัสผ่านที่ admin ส่งให้ผู้ใช้ใหม่ (เปิดได้โดยไม่ต้อง login)
     path: 'set-password',
     canActivate: [guestGuard],
     loadComponent: () =>
@@ -42,18 +40,20 @@ export const routes: Routes = [
           import('@features/corporate/corporate.page').then((m) => m.CorporatePage),
       },
       {
-        path: 'components',
+        path: 'sim',
+        loadComponent: () => import('@features/sim/sim.page').then((m) => m.SimPage),
+      },
+      {
+        path: 'corporate-quota',
         loadComponent: () =>
-          import('@features/components/components.page').then((m) => m.ComponentsPage),
+          import('@features/corporate-quota/corporate-quota.page').then(
+            (m) => m.CorporateQuotaPage,
+          ),
       },
       {
-        path: 'api-docs',
-        loadComponent: () => import('@features/api-docs/api-docs.page').then((m) => m.ApiDocsPage),
-      },
-      {
-        path: 'pooling',
-        // Data pool = the bulk the corporate bought (CRM CORPORATE_QUOTA); the page lives in features/quota.
-        loadComponent: () => import('@features/quota/quota.page').then((m) => m.QuotaPage),
+        path: 'data-pool',
+        loadComponent: () =>
+          import('@features/data-pool/data-pool.page').then((m) => m.DataPoolPage),
       },
       {
         path: 'my-corporates',
@@ -67,11 +67,6 @@ export const routes: Routes = [
         loadComponent: () => import('@features/users/users.page').then((m) => m.UsersPage),
       },
       {
-        path: 'quota',
-        // Corporate quota = CRM SHARE_IN_GROUP groups shared by numbers; the page lives in features/pooling.
-        loadComponent: () => import('@features/pooling/pooling.page').then((m) => m.PoolingPage),
-      },
-      {
         path: 'billing',
         loadComponent: () => import('@features/billing/billing.page').then((m) => m.BillingPage),
       },
@@ -80,22 +75,10 @@ export const routes: Routes = [
         loadComponent: () => import('@features/reports/reports.page').then((m) => m.ReportsPage),
       },
       {
-        path: 'sim',
-        loadComponent: () => import('@features/sim/sim.page').then((m) => m.SimPage),
-      },
-      {
         path: 'roles',
         canActivate: [roleGuard(['admin'])],
         loadComponent: () => import('@features/roles/roles.page').then((m) => m.RolesPage),
       },
-      ...workspaceNavigation
-        .filter((item) => item.starter)
-        .map((item) => ({
-          path: item.path.slice(1),
-          data: { title: item.label },
-          loadComponent: () =>
-            import('@features/module-starter/module-starter.page').then((m) => m.ModuleStarterPage),
-        })),
       { path: '**', redirectTo: 'dashboard' },
     ],
   },

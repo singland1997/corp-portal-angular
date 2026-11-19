@@ -32,16 +32,8 @@ import { ReportRow, ReportsApi } from './data-access/reports-api';
 import { REPORTS, ReportColumn, ReportDefinition } from './reports.config';
 import { reportsEn, ReportsMessageKey, reportsTh } from './reports.messages';
 
-/** แถวในตาราง (ตารางกลางต้องมี id) */
 type TableRow = ReportRow & { id: string };
 
-/**
- * หน้ารายงาน: เลือกรายงาน → กรองช่วงวันที่ → ดูตาราง → ส่งออก CSV
- *
- * - ผู้ใช้ platform (System admin / Sales) เห็นรายงานทั้ง 2 กลุ่ม
- * - ผู้ใช้ corporate เห็นเฉพาะรายงานขององค์กรตัวเอง
- * รายการรายงานและคอลัมน์ทั้งหมดอยู่ใน `reports.config.ts`
- */
 @Component({
   selector: 'cp-reports-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,8 +57,6 @@ export class ReportsPage {
   private readonly corporate = inject(CorporateContext);
   private readonly document = inject(DOCUMENT);
 
-  // ---- รายงานที่เลือกได้ ----
-
   readonly available = computed(() => {
     const isPlatform = this.auth.user()?.role !== 'corporate';
     return REPORTS.filter((r) => r.audience === 'corporate' || isPlatform);
@@ -86,13 +76,9 @@ export class ReportsPage {
     REPORTS.find((r) => r.id === this.reportId()),
   );
 
-  // ---- ช่วงวันที่ ----
-
   readonly from = signal('');
   readonly to = signal('');
   readonly invalidDates = computed(() => !!this.from() && !!this.to() && this.from() > this.to());
-
-  // ---- ข้อมูล ----
 
   readonly table = viewChild(DataTableComponent);
   readonly query = signal<TableQuery>(INITIAL_QUERY, { equal: sameTableQuery });
@@ -127,7 +113,6 @@ export class ReportsPage {
         this.exportError.set(null);
       });
     });
-    // โหลดใหม่เมื่อเปลี่ยนองค์กร รายงาน หรือช่วงวันที่ (ยกเลิก request เก่าอัตโนมัติ)
     effect((onCleanup) => {
       const corporateId = this.corporate.current()?.id;
       const report = this.report();
@@ -177,7 +162,6 @@ export class ReportsPage {
     this.revision.update((n) => n + 1);
   }
 
-  /** ค่าที่แสดงในช่อง ตามรูปแบบที่กำหนดใน reports.config.ts */
   cell(row: ReportRow, field: string): string {
     const column = this.report()?.columns.find((c) => c.field === field);
     return column ? this.format(row[field], column) : String(row[field] ?? '');

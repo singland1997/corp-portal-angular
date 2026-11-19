@@ -4,11 +4,11 @@ import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { corporateResource } from '@core/api/corporate-resource';
 import { apiErrorMessage } from '@core/api/api-error';
 import { TranslationKey } from '@core/i18n/translation.models';
-import { PoolError, QuotaDraft, quotaError } from '../pooling.models';
-import { POOLING_REPOSITORY } from './pooling.repository';
+import { PoolError, QuotaDraft, quotaError } from '../corporate-quota.models';
+import { POOLING_REPOSITORY } from './corporate-quota.repository';
 
 @Injectable()
-export class PoolingDataService {
+export class CorporateQuotaDataService {
   private readonly repository = inject(POOLING_REPOSITORY);
   private readonly context = inject(CorporateContext);
   readonly resource = corporateResource((id) => this.repository.load(id));

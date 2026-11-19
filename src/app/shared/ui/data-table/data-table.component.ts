@@ -73,8 +73,6 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
   readonly i18n = inject(LocaleService);
   readonly id = `portal-table-${++nextTableId}`;
 
-  // ---- inputs / outputs ----
-
   readonly rows = input.required<TRow[]>();
   readonly columns = input.required<TableColumn<TRow>[]>();
   readonly label = input.required<string>();
@@ -94,8 +92,6 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
   readonly queryChange = output<TableQuery>();
   readonly retry = output<void>();
 
-  // ---- สถานะภายใน: ค้นหา, หน้า, การเรียง ----
-
   readonly search = signal('');
   readonly first = signal(0);
   readonly pageSizeOptions = [10, 25, 50];
@@ -103,9 +99,6 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
   readonly sortField = signal<TableField<TRow> | null>(null);
   readonly sortOrder = signal<1 | -1>(1);
 
-  // ---- ค่าที่คำนวณจากสถานะ ----
-
-  /** หัวคอลัมน์พร้อมไอคอนและ aria-sort ตามการเรียงปัจจุบัน */
   readonly headerColumns = computed<TableHeader<TRow>[]>(() =>
     this.columns().map((column) => {
       const header: TableHeader<TRow> = {
@@ -190,14 +183,11 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
     }
   }
 
-  // ---- เรียกจากหน้า (ผ่าน viewChild) หรือจาก template ----
-
   setSearch(value: string): void {
     this.search.set(value);
     this.reset();
   }
 
-  /** กลับหน้าแรกและล้างแถวที่เลือก */
   reset(): void {
     this.first.set(0);
     this.selectedIds.set([]);
@@ -226,7 +216,6 @@ export class DataTableComponent<TRow extends TableRow = PortalRow> implements On
     );
   }
 
-  /** checkbox หัวตาราง: เลือก/ไม่เลือกเฉพาะแถวในหน้าปัจจุบัน */
   selectVisible(checked: boolean): void {
     const visible = new Set(this.visibleRows().map((row) => row.id));
     this.selectedIds.update((ids) =>

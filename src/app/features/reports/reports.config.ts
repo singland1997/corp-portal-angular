@@ -1,6 +1,5 @@
 import { ReportsMessageKey } from './reports.messages';
 
-/** platform = รายงานของ System admin (ทุกองค์กร), corporate = รายงานขององค์กรปัจจุบัน */
 export type ReportAudience = 'platform' | 'corporate';
 
 /**
@@ -20,7 +19,6 @@ export interface ReportColumn {
 }
 
 export interface ReportDefinition {
-  /** ชื่อใน API: GET /api/v1/reports/{id} */
   id: string;
   title: ReportsMessageKey;
   description: ReportsMessageKey;
@@ -30,9 +28,7 @@ export interface ReportDefinition {
   columns: ReportColumn[];
 }
 
-/** เพิ่มรายงานใหม่: เพิ่ม entry ที่นี่ + ข้อความใน reports.messages.ts + API ฝั่ง reporting */
 export const REPORTS: readonly ReportDefinition[] = [
-  // ---- System admin ----
   {
     id: 'package-status',
     title: 'packageStatus',
@@ -79,7 +75,6 @@ export const REPORTS: readonly ReportDefinition[] = [
     ],
   },
 
-  // ---- Corp admin ----
   {
     id: 'usage-summary',
     title: 'usageSummary',

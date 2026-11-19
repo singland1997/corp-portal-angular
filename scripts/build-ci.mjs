@@ -20,7 +20,7 @@ if (apiBaseUrl !== '/api') {
 }
 
 const configuration = target;
-const settings = { name: target, production: target === 'prod', apiBaseUrl };
+const settings = { name: target, apiBaseUrl };
 const generated = resolve(root, 'src/environments/environment.ci.ts');
 
 try {

@@ -42,7 +42,6 @@ import { PackageQuota, PackagesApi } from './data-access/packages-api';
 import { corporateResource } from '@core/api/corporate-resource';
 import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 
-/** แถวในตาราง = เลขหมาย + ปริมาณใช้งานที่จัดรูปแบบแล้ว */
 type NumberRow = MobileNumber & {
   usage: string;
   voice: string;
@@ -53,9 +52,6 @@ type NumberRow = MobileNumber & {
 /** Lot filter value for numbers whose current lot is unknown (null). */
 const UNKNOWN_LOT = '__unknown__';
 
-/**
- * หน้าข้อมูลองค์กร: โปรไฟล์, สรุปตาม lot และตารางเลขหมาย (กรอง, ดูรายละเอียด, ระงับหลายรายการ)
- */
 @Component({
   selector: 'cp-corporate-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -82,7 +78,6 @@ export class CorporatePage {
   readonly corporate = inject(CorporateContext);
   readonly corporateData = inject(CorporateDataService);
   private readonly packagesApi = inject(PackagesApi);
-  /** Packages the corporate's numbers currently use (read-only). */
   readonly packages = corporateResource((id) => this.packagesApi.list(id));
 
   /** One line per quota: "DATA · VOLUME · 10,000 MB", "DATA · UNLIMITED". */
@@ -267,13 +262,9 @@ export class CorporatePage {
     () => this.corporateData.resource.data()?.capabilities.resume ?? false,
   );
 
-  // ---- สรุป ----
-
   readonly counts = this.corporateData.counts;
   readonly countedStatuses = COUNTED_STATUSES;
   readonly lots = this.corporateData.lots;
-
-  // ---- ตัวกรอง ----
 
   readonly statusFilter = this.corporateData.status;
   readonly lotFilter = this.corporateData.lot;
@@ -290,8 +281,6 @@ export class CorporatePage {
       value: lot ?? UNKNOWN_LOT,
     })),
   ]);
-
-  // ---- ตาราง ----
 
   readonly rows = computed<NumberRow[]>(() =>
     this.corporateData.numbers().map((number) => ({
@@ -340,14 +329,10 @@ export class CorporatePage {
     { id: 'details', label: this.i18n.t('details'), icon: 'pi pi-eye' },
   ]);
 
-  // ---- การเลือกและ dialog ----
-
   readonly selectedNumberIds = signal<string[]>([]);
   readonly selectedNumber = signal<NumberRow | null>(null);
-  /** Command waiting for confirmation (null = dialog closed). */
   readonly pendingAction = signal<NumberAction | null>(null);
   readonly confirmVisible = computed(() => this.pendingAction() !== null);
-  /** Last command result summary shown above the table. */
   readonly commandSummary = signal<{ action: NumberAction; results: CommandResult[] } | null>(null);
   readonly commandMessage = computed(() => {
     const summary = this.commandSummary();
@@ -364,7 +349,6 @@ export class CorporatePage {
   });
 
   constructor() {
-    // เปลี่ยนองค์กร → ล้างตัวกรอง การเลือก และปิด dialog
     effect(() => {
       this.corporate.current()?.id;
       untracked(() => {
@@ -376,8 +360,6 @@ export class CorporatePage {
       });
     });
   }
-
-  // ---- ตัวกรอง (เปลี่ยนแล้วล้างรายการที่เลือกและกลับหน้าแรก) ----
 
   setStatusFilter(status: MobileNumberStatusFilter): void {
     this.statusFilter.set(status);
@@ -406,8 +388,6 @@ export class CorporatePage {
     }).format(new Date(iso));
   }
 
-  // ---- รายละเอียดเลขหมาย ----
-
   openDetails(event: TableActionEvent<NumberRow>): void {
     if (event.action === 'details') this.selectedNumber.set(event.row);
   }
@@ -419,8 +399,6 @@ export class CorporatePage {
   setDetailsVisible(visible: boolean): void {
     if (!visible) this.closeDetails();
   }
-
-  // ---- ระงับ / เปิดใช้งานเลขหมาย (ผ่าน provisioning API) ----
 
   setConfirmVisible(visible: boolean): void {
     if (!visible) this.pendingAction.set(null);

@@ -1,28 +1,21 @@
-# Corp Portal UI (Angular) — agent guide
+# Agent guide
 
-Angular 21 + PrimeNG 21 + Tailwind, ไทย/อังกฤษ เป็น frontend หลัก (Flutter `../corp_portal_ui` หยุดแก้ไว้ก่อน) API อยู่ที่ `../corp-portal-api` ภาพรวมใน [README.md](README.md)
+ภาพรวมและคำสั่งอยู่ใน [README.md](README.md) งานเข้า `main` ผ่าน PR เท่านั้น ห้ามรัน deploy เองโดยไม่ได้สั่ง
 
-## วิธีทำงาน (AI-native SDLC)
-งานใหม่เดินตาม `~/Documents/home/docs/ai-native-sdlc.md`: `intent.md` → `spec.md` → `plan.md` → โค้ด+เทส → PR เก็บที่ `docs/work/<YYYY-MM-DD>-<slug>/` ถ้างานคร่อม API ให้ intent/spec อยู่ที่ repo API แล้ว `plan.md` ของฝั่ง UI อยู่ที่นี่ งานเข้า `main` ผ่าน PR เท่านั้น review ตาม [REVIEW.md](REVIEW.md)
-
-## คำสั่ง
-- Node 24 ตาม `.nvmrc` (`nvm install 24` ถ้ายังไม่มี)
-- ตรวจ: `bash scripts/ci/verify.sh dev` (CI รันตัวเดียวกัน) หรือ `npm run format` → `npm test -- --watch=false` → `npm run build` (skill `angular-check`)
-- Deploy: `.github/workflows/deploy.yml` → `scripts/ci/deploy.sh` ดู [docs/aws-deployment.md](docs/aws-deployment.md) ห้ามรัน `deploy` เองโดยไม่ได้สั่ง
-- ดูหน้าจริง: login ด้วยบัญชีของผู้ใช้เอง ห้ามพิมพ์รหัสผ่านแทน ตรวจทั้งมือถือ (375px) และ desktop
+## ก่อนเปิด PR
+- `bash scripts/ci/verify.sh dev` ผ่าน
+- ดูหน้าจริงทั้งมือถือ (375px) และ desktop; login ด้วยบัญชีของผู้ใช้เอง ห้ามพิมพ์รหัสผ่านแทน
 
 ## กฎหน้าจอ
-- ค่าไม่รู้หรือข้อความว่างแสดง `—` (`UNKNOWN_VALUE`) ห้ามแสดงเป็น 0
-- ข้อความใหม่ต้องมีทั้ง `core/i18n/locales/en.ts` และ `th.ts` (test เช็กครบทุก key)
-- response ใหม่ต้องมี validator ใน `data-access/*-response.ts`; ฟิลด์ที่เพิ่มทีหลังใช้ `optional(...)`
-- กราฟ: สัดส่วนของทั้งหมดใช้ `cp-segmented-bar`, อัตราส่วนเทียบเพดานใช้ `cp-meter` สีสถานะมีชื่อ/จำนวนกำกับเสมอ
-  - ข้อยกเว้นเดียว: วงแหวน pool บน dashboard (การ์ดสีเข้ม) เก็บไว้ได้ เงื่อนไขคือแสดง % เป็นตัวเลข, ค่าไม่รู้แสดง `—`, ใช้เกินเพดานเปลี่ยนสีพร้อมไอคอนและข้อความ "ใช้เกินโควตา", สีมาจาก `PORTAL_COLORS` ที่อื่นยังใช้ `cp-meter` และห้ามใช้โดนัทหลายส่วนแทนสัดส่วน
-- แก้ `proxy.conf.json` ให้แก้ `../corp_portal_ui/web_dev_config.yaml` ให้ตรงกันด้วย
+- ค่าไม่รู้แสดง `—` (`UNKNOWN_VALUE`) ห้ามแสดงเป็น 0
+- ข้อความใหม่ต้องมีทั้ง `en.ts` และ `th.ts` (test เช็กครบทุก key)
+- response ใหม่ต้องมี validator ใน `data-access`; ฟิลด์ที่เพิ่มทีหลังใช้ `optional(...)`
+- กราฟ: สัดส่วนใช้ `cp-segmented-bar`, เทียบเพดานใช้ `cp-meter`; ข้อยกเว้นคือวงแหวน Data pool บน dashboard (แสดง % เป็นตัวเลข, เกินเพดานเปลี่ยนสีพร้อมไอคอน)
+- ตัวเลขชิดขวา (`align: 'end'`), ยอดเปลี่ยนแปลงใช้ `type: 'signed'`, ตารางหลายหน้ากำหนด `width`
+- ใช้ component PrimeNG ตัวใหม่ต้องเพิ่ม theme ใน `core/theme/aura.preset.ts`
 
-## สิ่งที่ AI มักพลาดใน repo นี้
-- `app.spec.ts` มี `http.verify()` ใน `afterEach`: หน้าที่ยิง request เพิ่มต้อง flush ใน test ไม่งั้น test อื่นพังต่อเนื่อง
-- ชื่อเมนูไม่ตรงกับชื่อโฟลเดอร์: เมนู **Data pool** (`/pooling`) = ก้อนที่องค์กรซื้อไว้ (CRM `CORPORATE_QUOTA`) ใช้หน้า `features/quota`; เมนู **Corporate quota** (`/quota`) = กลุ่มแชร์โควตา (CRM `SHARE_IN_GROUP`) ใช้หน้า `features/pooling` วงแหวนบน dashboard คือ data pool
-- ทั้งสองอย่างมาจาก CRM แก้ไขใน Portal ไม่ได้; ปุ่มปรับโควตาแสดงเมื่อ `capabilities.quotaAdjust` เป็นจริงเท่านั้น
+## สิ่งที่มักพลาด
+- `app.spec.ts` มี `http.verify()` ใน `afterEach`: request ใหม่ต้อง flush ใน test
+- หน้าที่โหลดผ่าน `readResource`/`corporateResource` ต้อง `TestBed.tick()` ก่อน expect request
+- ข้อมูล CRM อาจเป็นข้อความว่าง ไม่ใช่ `null`
 - ชื่อไทยที่ขึ้นต้นด้วยสระหน้า (เ แ โ ใ ไ) ต้องข้ามสระเมื่อทำอักษรย่อ
-- ข้อมูลจาก CRM อาจเป็นข้อความว่าง ไม่ใช่ `null`
-- ใช้ component PrimeNG ตัวใหม่ (`primeng/<name>`) ต้องเพิ่ม theme ของมันใน `core/theme/aura.preset.ts` ด้วย ไม่งั้นได้ CSS แต่ไม่มีตัวแปร theme หน้าตาจะเพี้ยน (เคยเกิดกับ tabs หน้า Data pooling)
