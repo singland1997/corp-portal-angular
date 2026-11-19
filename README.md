@@ -55,6 +55,7 @@ npm start
 
 ## เอกสารเพิ่มเติม
 
+- [วิธีทำงานกับ AI (AI-native SDLC), คำสั่งตรวจ และสิ่งที่มักพลาด](AGENTS.md) · [เกณฑ์ review](REVIEW.md) · งานแต่ละชิ้นอยู่ที่ `docs/work/`
 - [Component กลาง ภาษา และธีม](docs/ui-guide.md)
 - [การเชื่อม API และข้อจำกัดปัจจุบัน](docs/api-integration.md)
 - [Pooling](docs/pooling.md)
