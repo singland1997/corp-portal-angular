@@ -9,6 +9,7 @@ import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { formatDataSize, MB_PER_TB } from '@shared/utils/data-size';
+import { PORTAL_COLORS } from '@core/theme/portal-colors';
 import { createUsageChartData, USAGE_CHART_OPTIONS } from './dashboard.charts';
 import { DashboardRepository } from './data-access/dashboard.repository';
 import { DashboardSnapshot, isKnownOperation, SimActivity } from './dashboard.models';
@@ -107,11 +108,14 @@ export class DashboardPage {
     const p = this.poolKnown();
     return p && p.quotaTb > 0 ? Math.round((p.usedTb / p.quotaTb) * 100) : null;
   });
+  /** Used beyond the quota: the ring turns red and the card says so (never just "full"). */
+  readonly overQuota = computed(() => (this.percent() ?? 0) > 100);
   readonly ringFill = computed(() => {
     const percent = this.percent();
-    return percent === null
-      ? '#52525b'
-      : 'conic-gradient(#facc15 ' + Math.min(Math.max(percent, 0), 100) + '%, #52525b 0)';
+    const track = PORTAL_COLORS.ringTrack;
+    if (percent === null) return track;
+    const fill = this.overQuota() ? PORTAL_COLORS.critical : PORTAL_COLORS.primary;
+    return `conic-gradient(${fill} ${Math.min(Math.max(percent, 0), 100)}%, ${track} 0)`;
   });
   readonly poolMetrics = computed(
     () =>
