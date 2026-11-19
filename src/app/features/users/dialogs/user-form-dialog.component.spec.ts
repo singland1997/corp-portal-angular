@@ -27,7 +27,8 @@ const owner: UserRow = {
 describe('Sales corporate assignments', () => {
   const locale = signal<'en' | 'th'>('en');
   let api: {
-    list: ReturnType<typeof vi.fn>;
+    page: ReturnType<typeof vi.fn>;
+    assignments: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
   };
@@ -35,7 +36,14 @@ describe('Sales corporate assignments', () => {
   beforeEach(() => {
     locale.set('en');
     api = {
-      list: vi.fn().mockReturnValue(of([owner])),
+      page: vi
+        .fn()
+        .mockImplementation((params) =>
+          of({ items: params.corporate === 'B' ? [] : [owner], total: 1, page: 1, pageSize: 10 }),
+        ),
+      assignments: vi
+        .fn()
+        .mockReturnValue(of([{ corporateId: 'A', userId: owner.id, name: owner.name }])),
       create: vi.fn().mockReturnValue(of({ ...owner, inviteToken: 'test', inviteExpiresAt: 123 })),
       update: vi.fn().mockReturnValue(of(owner)),
     };
@@ -59,7 +67,9 @@ describe('Sales corporate assignments', () => {
   function open(user?: UserRow) {
     const fixture = TestBed.createComponent(UserFormDialogComponent);
     fixture.componentRef.setInput('user', user);
-    fixture.componentRef.setInput('users', [owner]);
+    fixture.componentRef.setInput('assignments', [
+      { corporateId: 'A', userId: owner.id, name: owner.name },
+    ]);
     fixture.componentRef.setInput('visible', true);
     fixture.detectChanges();
     const form = fixture.componentInstance;
@@ -133,10 +143,13 @@ describe('Sales corporate assignments', () => {
 
   it('shows and filters sales by assigned organizations instead of all corporates', () => {
     const page = TestBed.createComponent(UsersPage).componentInstance;
+    TestBed.tick();
     expect(page.rows()[0].corporateLabel).toBe('A');
     page.corporateFilter.set('B');
+    TestBed.tick();
     expect(page.rows()).toHaveLength(0);
     page.corporateFilter.set('A');
+    TestBed.tick();
     expect(page.rows()).toHaveLength(1);
   });
 });

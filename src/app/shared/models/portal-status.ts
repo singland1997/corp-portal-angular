@@ -1,4 +1,11 @@
-export const PORTAL_STATUSES = ['active', 'inactive', 'suspended', 'pending', 'failed', 'terminated'] as const;
+export const PORTAL_STATUSES = [
+  'active',
+  'inactive',
+  'suspended',
+  'pending',
+  'failed',
+  'terminated',
+] as const;
 
 export type PortalStatus = (typeof PORTAL_STATUSES)[number];
 

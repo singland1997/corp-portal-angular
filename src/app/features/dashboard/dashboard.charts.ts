@@ -13,33 +13,15 @@ export function createUsageChartData(
       {
         label: usedLabel,
         data: [...values],
+        backgroundColor: PORTAL_COLORS.primarySoft,
         borderColor: PORTAL_COLORS.primaryActive,
-        backgroundColor: `${PORTAL_COLORS.primarySoft}80`,
-        fill: true,
-        tension: 0.35,
-        pointRadius: 3,
-        pointBackgroundColor: PORTAL_COLORS.primaryHover,
         borderWidth: 2,
-        // Unknown days are gaps, not zero.
+        fill: true,
+        tension: 0,
+        pointRadius:
+          values.filter((v) => v !== null).length === values.length && values.length > 1 ? 0 : 3,
+        pointHitRadius: 9,
         spanGaps: false,
-      },
-    ],
-  };
-}
-
-export function createPoolChartData(
-  usedTb: number,
-  remainingTb: number,
-  labels: string[],
-): ChartData<'doughnut'> {
-  return {
-    labels,
-    datasets: [
-      {
-        data: [usedTb, remainingTb],
-        backgroundColor: [PORTAL_COLORS.primary, PORTAL_COLORS.subtle],
-        borderWidth: 0,
-        hoverOffset: 2,
       },
     ],
   };
@@ -51,6 +33,8 @@ export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
   plugins: {
     legend: { display: false },
     tooltip: {
+      displayColors: false,
+      padding: 12,
       callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y} GB` },
     },
   },
@@ -62,19 +46,9 @@ export const USAGE_CHART_OPTIONS: ChartOptions<'line'> = {
     },
     y: {
       beginAtZero: true,
-      grid: { color: PORTAL_COLORS.subtle },
-      ticks: { color: PORTAL_COLORS.muted, callback: (value) => `${value} GB` },
+      grid: { color: PORTAL_COLORS.border, drawTicks: false },
+      ticks: { color: PORTAL_COLORS.muted, maxTicksLimit: 5, callback: (value) => `${value} GB` },
       border: { display: false },
     },
-  },
-};
-
-export const POOL_CHART_OPTIONS: ChartOptions<'doughnut'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  cutout: '78%',
-  plugins: {
-    legend: { display: false },
-    tooltip: { callbacks: { label: (context) => `${context.label}: ${context.parsed} TB` } },
   },
 };

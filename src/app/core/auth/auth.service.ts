@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthSessionStore } from './auth-session.store';
 import { AuthApi } from './auth-api.service';
@@ -24,7 +25,10 @@ export class AuthService {
     try {
       const response = await firstValueFrom(this.api.refresh(token));
       if (!this.session.signingOut()) this.session.set(response);
-    } catch {
+    } catch (error) {
+      this.session.renewalFailed.set(
+        !(error instanceof HttpErrorResponse && [401, 403].includes(error.status)),
+      );
       // Do not replay a rotating token after a failed/ambiguous refresh.
       this.session.clear();
     }

@@ -1,3 +1,4 @@
+import { Page } from '@core/api/pagination';
 import { PortalStatus } from '@shared/models/portal-status';
 
 /** `unknown` = numbers whose source status has no confirmed portal mapping. */
@@ -13,6 +14,25 @@ export interface MobileNumber {
   usageMb: number | null;
   iccid: string | null;
   lot: string | null;
+  /** CRM product (`res_product`), kept apart from the package; absent in older responses. */
+  productName?: string | null;
+  /** CRM package (`om_package`) of current subscriptions. */
+  packageName?: string | null;
+  /** Raw CRM subscriber status, shown next to the mapped Portal status. */
+  sourceStatus?: string | null;
+  /** Raw CRM inventory status of the SIM (ICCID item) and of the number (MSISDN item). */
+  simInventoryStatus?: string | null;
+  numberInventoryStatus?: string | null;
+  /** Current data balances (CRM PRODUCT_QUOTA buckets), largest first. */
+  quotas?: NumberQuota[];
+}
+
+/** One data balance in MB; `null` when the source unit is not mapped. */
+export interface NumberQuota {
+  totalMb: number | null;
+  remainingMb: number | null;
+  expiresAt: string | null;
+  capMax: boolean | null;
 }
 
 /** สถานะที่นับแยกในสรุป (สถานะอื่นนับรวมใน total อย่างเดียว) */
@@ -78,4 +98,18 @@ export function summarizeLots(numbers: readonly MobileNumber[]): LotSummary[] {
 /** Status filter that keeps unmapped statuses reachable instead of hiding them. */
 export function matchesStatus(status: PortalStatus | null, filter: MobileNumberStatusFilter) {
   return filter === 'all' || (filter === 'unknown' ? status === null : status === filter);
+}
+
+export interface NumberPage extends Page<MobileNumber> {
+  counts: NumberCounts;
+  lots: {
+    lot: string | null;
+    productName?: string | null;
+    /** CRM `res_customer_lot.quota_type`; `null` = not set in the CRM. */
+    quotaType?: string | null;
+    counts: NumberCounts;
+  }[];
+  updatedAt: string;
+  usageThrough: string | null;
+  capabilities: { suspend: boolean; resume: boolean };
 }

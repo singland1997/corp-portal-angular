@@ -15,74 +15,107 @@
           (onClick)="back()"
         />
       }
-      <p-button
-        [label]="t('create')"
-        [ariaLabel]="t('create')"
-        icon="pi pi-plus"
-        (onClick)="openForm()"
-      />
     </cp-page-header>
     @if (notice(); as message) {
       <p-message severity="success" role="status">{{ t(message) }}</p-message>
     }
-    @if (pool(); as selected) {
+    @if (!detailMode()) {
+      <cp-card [title]="t('poolList')" [flush]="true">
+        <cp-data-table
+          [rows]="pools()"
+          [columns]="poolColumns()"
+          [actions]="poolActions()"
+          [cellTemplate]="poolCell"
+          [label]="t('poolList')"
+          [searchPlaceholder]="t('searchPools')"
+          (rowAction)="onPoolAction($event)"
+        >
+          <p-select
+            table-filters
+            [ariaLabel]="t('status')"
+            [options]="filterOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="filterStatus()"
+            (ngModelChange)="filterStatus.set($event)"
+            appendTo="body"
+          />
+        </cp-data-table>
+        <ng-template #poolCell let-row let-column="column">
+          @switch (column.field) {
+            @case ('status') {
+              <cp-status-badge [status]="row.status" />
+            }
+            @case ('usedMb') {
+              <span class="tabular-nums">{{ formatData(row.usedMb) }}</span>
+            }
+            @case ('remainingMb') {
+              <strong
+                class="tabular-nums"
+                [class.text-red-700]="row.remainingMb !== null && row.remainingMb < 0"
+              >
+                {{ formatData(row.remainingMb) }}
+              </strong>
+            }
+            @case ('quotaMb') {
+              <span class="tabular-nums">{{ formatData(row.quotaMb) }}</span>
+            }
+            @case ('utilization') {
+              @if (row.utilization !== null) {
+                <div class="grid min-w-20 gap-1">
+                  <span class="tabular-nums">{{ row.utilization | number: '1.0-1' }}%</span>
+                  <span aria-hidden="true" class="h-1 overflow-hidden rounded-full bg-zinc-100">
+                    <span
+                      class="block h-full max-w-full rounded-full bg-yellow-500"
+                      [class.bg-red-600]="row.utilization > 100"
+                      [style.width.%]="row.utilization"
+                    ></span>
+                  </span>
+                </div>
+              } @else {
+                —
+              }
+            }
+            @default {
+              {{ row[column.field] ?? '—' }}
+            }
+          }
+        </ng-template>
+      </cp-card>
+    } @else if (pool(); as selected) {
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-3">
-          @if (!detailMode()) {
-            <p-select
-              inputId="selected-pool"
-              [ariaLabel]="t('pool')"
-              [options]="poolOptions()"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="selected.id"
-              (ngModelChange)="selectPool($event)"
-              appendTo="body"
-            />
-          } @else {
-            <h2 class="text-xl font-semibold">{{ selected.name }}</h2>
-          }
+          <h2 class="text-xl font-semibold">{{ poolName(selected) }}</h2>
           <cp-status-badge [status]="selected.status" />
           <span class="text-sm text-muted">
             {{ selected.corporate }} · {{ selected.lot ?? '—' }}
           </span>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <p-button
-            [label]="t('edit')"
-            [ariaLabel]="t('edit')"
-            icon="pi pi-pencil"
-            severity="secondary"
-            [outlined]="true"
-            (onClick)="openForm(selected)"
-          />
-          <p-button
-            [label]="t('increase')"
-            [ariaLabel]="t('increase')"
-            icon="pi pi-plus"
-            [disabled]="!canIncrease()"
-            (onClick)="openQuota('increase')"
-          />
-          <p-button
-            [label]="t('decrease')"
-            [ariaLabel]="t('decrease')"
-            icon="pi pi-minus"
-            severity="secondary"
-            [outlined]="true"
-            [disabled]="!canDecrease()"
-            (onClick)="openQuota('decrease')"
-          />
-        </div>
+        @if (quotaCommandAvailable()) {
+          <div class="flex flex-wrap gap-2">
+            <p-button
+              [label]="t('increase')"
+              [ariaLabel]="t('increase')"
+              icon="pi pi-plus"
+              [disabled]="!canIncrease()"
+              (onClick)="openQuota('increase')"
+            />
+            <p-button
+              [label]="t('decrease')"
+              [ariaLabel]="t('decrease')"
+              icon="pi pi-minus"
+              severity="secondary"
+              [outlined]="true"
+              [disabled]="!canDecrease()"
+              (onClick)="openQuota('decrease')"
+            />
+          </div>
+        }
       </div>
       @if (selected.status === 'inactive') {
         <p-message severity="info">{{ t('inactiveHint') }}</p-message>
       }
-      @if (!quotaCommandAvailable()) {
-        <p-message severity="info">{{ i18n.t('commandUnavailable') }}</p-message>
-      }
-      @if (selected.sourceState === 'unlinked') {
-        <p-message severity="secondary">{{ t('sourceUnlinked') }}</p-message>
-      } @else if (selected.sourceState === 'partial') {
+      @if (selected.sourceState === 'partial') {
         <p-message severity="warn">{{ t('sourcePartial') }}</p-message>
       }
       @if (overQuota()) {
@@ -96,10 +129,15 @@
           class="rounded-xl bg-zinc-900 p-6 text-white lg:col-span-2"
           [attr.aria-label]="t('overview')"
         >
-          <p class="text-xs font-semibold tracking-wider text-yellow-300">{{ t('latest') }}</p>
-          <h2 class="mt-2 text-xl font-semibold">{{ t('overview') }}</h2>
+          <h2 class="text-sm text-zinc-300">{{ t('remaining') }}</h2>
+          <strong
+            class="mt-1 block text-3xl font-semibold tabular-nums"
+            [class.text-red-300]="overQuota()"
+          >
+            {{ formatData(remaining()) }}
+          </strong>
           @if (hasQuota()) {
-            <div class="my-4 flex items-center gap-6">
+            <div class="my-5 flex flex-wrap items-center gap-5">
               <div class="w-32 shrink-0">
                 <cp-chart
                   type="doughnut"
@@ -125,18 +163,14 @@
               </div>
             </div>
           } @else {
-            <p class="my-8 text-zinc-300">{{ t('noQuota') }}</p>
+            <p class="my-8 text-zinc-300">
+              {{ remaining() === null ? i18n.t('unknown') : t('noQuota') }}
+            </p>
           }
-          <dl class="grid grid-cols-3 gap-3">
+          <dl class="grid grid-cols-2 gap-3">
             <div>
               <dd class="font-semibold">{{ formatData(selected.usedMb) }}</dd>
               <dt class="mt-1 text-xs text-zinc-300">{{ t('used') }}</dt>
-            </div>
-            <div>
-              <dd class="font-semibold" [class.text-red-300]="overQuota()">
-                {{ formatData(remaining()) }}
-              </dd>
-              <dt class="mt-1 text-xs text-zinc-300">{{ t('remaining') }}</dt>
             </div>
             <div>
               <dd class="font-semibold">{{ formatData(selected.quotaMb) }}</dd>
@@ -144,28 +178,8 @@
             </div>
           </dl>
         </section>
-        <cp-card [title]="t('byDepartment')" class="lg:col-span-3">
-          <div class="grid gap-6">
-            @for (department of departments(); track department.key) {
-              <div class="grid gap-2">
-                <div class="flex justify-between gap-4 text-sm">
-                  <span>{{ department.label }}</span>
-                  <strong>{{ formatData(department.used) }}</strong>
-                </div>
-                <p-progressbar
-                  [value]="departmentShare(department.used)"
-                  [showValue]="false"
-                  [ariaLabel]="department.label"
-                />
-              </div>
-            } @empty {
-              <p class="py-8 text-muted">{{ t('noDepartment') }}</p>
-            }
-          </div>
-        </cp-card>
-      </div>
-      @if (detailMode()) {
-        <cp-card [title]="t('details')">
+
+        <cp-card [title]="t('details')" class="lg:col-span-3">
           <dl class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <dt class="text-xs text-muted">{{ t('pool') }}</dt>
@@ -180,12 +194,12 @@
               <dd class="mt-1">{{ members().length | number }}</dd>
             </div>
             <div>
-              <dt class="text-xs text-muted">{{ t('createdAt') }}</dt>
-              <dd class="mt-1">{{ formatDate(selected.createdAt) }} · {{ selected.createdBy }}</dd>
+              <dt class="text-xs text-muted">{{ t('service') }}</dt>
+              <dd class="mt-1">{{ selected.service ?? '—' }}</dd>
             </div>
             <div>
-              <dt class="text-xs text-muted">{{ t('updatedAt') }}</dt>
-              <dd class="mt-1">{{ formatDate(selected.updatedAt) }} · {{ selected.updatedBy }}</dd>
+              <dt class="text-xs text-muted">{{ t('expiresAt') }}</dt>
+              <dd class="mt-1">{{ formatDate(selected.expiresAt) }}</dd>
             </div>
           </dl>
           <div class="mt-5">
@@ -199,121 +213,121 @@
             />
           </div>
         </cp-card>
-      }
-      <cp-card [title]="t('members')" [flush]="true">
-        <cp-data-table
-          [rows]="memberRows()"
-          [columns]="memberColumns()"
-          [actions]="memberActions()"
-          [label]="t('members')"
-          [searchPlaceholder]="t('searchMembers')"
-          (rowAction)="member.set($event.row)"
-        >
-          <p-select
-            table-filters
-            [ariaLabel]="t('department')"
-            [options]="departmentOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="department()"
-            (ngModelChange)="department.set($event)"
-            appendTo="body"
-          />
-        </cp-data-table>
-      </cp-card>
-      <cp-card [title]="t('transactions')">
-        <p class="mb-5 text-sm text-muted">{{ t('transactionHint') }}</p>
-        <div class="mb-5 flex flex-wrap items-end gap-3">
-          <div class="grid gap-2">
-            <label for="pool-from" class="text-sm">{{ t('from') }}</label>
-            <input
-              pInputText
-              id="pool-from"
-              type="date"
-              [ngModel]="from()"
-              (ngModelChange)="from.set($event)"
+      </div>
+      <p-tabs value="members">
+        <p-tablist>
+          <p-tab value="members">{{ t('members') }}</p-tab>
+          <p-tab value="history">{{ t('transactions') }}</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="members">
+            <div class="grid gap-5">
+              <cp-data-table
+                [rows]="memberRows()"
+                [columns]="memberColumns()"
+                [actions]="memberActions()"
+                [label]="t('members')"
+                [searchPlaceholder]="t('searchMembers')"
+                (rowAction)="member.set($event.row)"
+              >
+                <p-select
+                  table-filters
+                  [ariaLabel]="t('department')"
+                  [options]="departmentOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="department()"
+                  (ngModelChange)="department.set($event)"
+                  appendTo="body"
+                />
+              </cp-data-table>
+              <cp-card [title]="t('byDepartment')">
+                <div class="grid gap-6">
+                  @for (department of departments(); track department.key) {
+                    <div class="grid gap-2">
+                      <div class="flex justify-between gap-4 text-sm">
+                        <span>{{ department.label }}</span>
+                        <strong>{{ formatData(department.used) }}</strong>
+                      </div>
+                      <p-progressbar
+                        [value]="departmentShare(department.used)"
+                        [showValue]="false"
+                        [ariaLabel]="department.label"
+                      />
+                    </div>
+                  } @empty {
+                    <p class="py-8 text-muted">{{ t('noDepartment') }}</p>
+                  }
+                </div>
+              </cp-card>
+            </div>
+          </p-tabpanel>
+          <p-tabpanel value="history">
+            <p class="mb-5 text-sm text-muted">{{ t('transactionHint') }}</p>
+            <div class="mb-5 flex flex-wrap items-end gap-3">
+              <div class="grid gap-2">
+                <label for="pool-from" class="text-sm">{{ t('from') }}</label>
+                <input
+                  pInputText
+                  id="pool-from"
+                  type="date"
+                  [ngModel]="from()"
+                  (ngModelChange)="from.set($event)"
+                />
+              </div>
+              <div class="grid gap-2">
+                <label for="pool-to" class="text-sm">{{ t('to') }}</label>
+                <input
+                  pInputText
+                  id="pool-to"
+                  type="date"
+                  [ngModel]="to()"
+                  (ngModelChange)="to.set($event)"
+                />
+              </div>
+              <p-select
+                [ariaLabel]="t('type')"
+                [options]="typeOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="transactionType()"
+                (ngModelChange)="transactionType.set($event)"
+                appendTo="body"
+              />
+              <p-button
+                [label]="t('clear')"
+                [ariaLabel]="t('clear')"
+                severity="secondary"
+                [text]="true"
+                (onClick)="clearTransactionFilters()"
+              />
+              <p-button
+                [label]="t('export')"
+                [ariaLabel]="t('export')"
+                icon="pi pi-download"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="invalidDates() || transactions().length === 0"
+                (onClick)="exportTransactions()"
+              />
+            </div>
+            @if (invalidDates()) {
+              <p-message severity="error" role="alert">{{ t('invalidDateRange') }}</p-message>
+            }
+            <cp-data-table
+              [rows]="transactionRows()"
+              [columns]="transactionColumns()"
+              [label]="t('transactions')"
+              [searchable]="false"
             />
-          </div>
-          <div class="grid gap-2">
-            <label for="pool-to" class="text-sm">{{ t('to') }}</label>
-            <input
-              pInputText
-              id="pool-to"
-              type="date"
-              [ngModel]="to()"
-              (ngModelChange)="to.set($event)"
-            />
-          </div>
-          <p-select
-            [ariaLabel]="t('type')"
-            [options]="typeOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="transactionType()"
-            (ngModelChange)="transactionType.set($event)"
-            appendTo="body"
-          />
-          <p-button
-            [label]="t('clear')"
-            [ariaLabel]="t('clear')"
-            severity="secondary"
-            [text]="true"
-            (onClick)="clearTransactionFilters()"
-          />
-          <p-button
-            [label]="t('export')"
-            [ariaLabel]="t('export')"
-            icon="pi pi-download"
-            severity="secondary"
-            [outlined]="true"
-            [disabled]="invalidDates() || transactions().length === 0"
-            (onClick)="exportTransactions()"
-          />
-        </div>
-        @if (invalidDates()) {
-          <p-message severity="error" role="alert">{{ t('invalidDateRange') }}</p-message>
-        }
-        <cp-data-table
-          [rows]="transactionRows()"
-          [columns]="transactionColumns()"
-          [label]="t('transactions')"
-          [searchable]="false"
-        />
-      </cp-card>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
     } @else {
       <p-message severity="error">{{ t('poolMissing') }}</p-message>
       <p-button [label]="t('back')" [ariaLabel]="t('back')" (onClick)="back()" />
     }
-    @if (!detailMode()) {
-      <cp-card [title]="t('poolList')" [flush]="true">
-        <cp-data-table
-          [rows]="pools()"
-          [columns]="poolColumns()"
-          [actions]="poolActions()"
-          [label]="t('poolList')"
-          [searchPlaceholder]="t('searchPools')"
-          (rowAction)="onPoolAction($event)"
-        >
-          <p-select
-            table-filters
-            [ariaLabel]="t('status')"
-            [options]="filterOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="filterStatus()"
-            (ngModelChange)="filterStatus.set($event)"
-            appendTo="body"
-          />
-        </cp-data-table>
-      </cp-card>
-    }
   </div>
-
-  <cp-pool-form-dialog
-    [(visible)]="formVisible"
-    [pool]="editingPool()"
-    (saved)="notice.set('saved')"
-  />
 
   <cp-quota-dialog
     [(visible)]="quotaVisible"

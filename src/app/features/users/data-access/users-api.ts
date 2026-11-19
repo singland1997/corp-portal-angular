@@ -1,14 +1,25 @@
+import { Page } from '@core/api/pagination';
 import { inject, Injectable } from '@angular/core';
 import { ApiClient } from '@core/api/api-client';
-import { CreatedUser, CreateUserBody, Invite, UpdateUserBody, UserRow } from '../users.models';
+import {
+  CreatedUser,
+  CreateUserBody,
+  Invite,
+  UpdateUserBody,
+  UserRow,
+  SalesAssignment,
+} from '../users.models';
 
 /** เรียก API ของ User management (Identity service) */
 @Injectable({ providedIn: 'root' })
 export class UsersApi {
   private readonly api = inject(ApiClient);
 
-  list() {
-    return this.api.get<UserRow[]>('/users');
+  page(params: Record<string, string | number>) {
+    return this.api.get<Page<UserRow>>('/users/page', undefined, params);
+  }
+  assignments() {
+    return this.api.get<SalesAssignment[]>('/users/sales-assignments');
   }
 
   create(body: CreateUserBody) {

@@ -1,0 +1,55 @@
+<div
+  role="img"
+  class="flex w-full gap-0.5 overflow-visible"
+  [class]="variant() === 'tall' ? 'h-9' : 'h-2'"
+  [attr.aria-label]="label()"
+>
+  @for (segment of visible(); track segment.key) {
+    <div
+      class="group relative flex min-w-1 items-center justify-center first:rounded-l last:rounded-r focus-visible:outline-2"
+      [style.flex-grow]="segment.share"
+      [style.flex-basis]="0"
+      [style.background]="fill(segment)"
+      tabindex="0"
+      [attr.aria-label]="
+        segment.label + ': ' + count(segment.value) + ' (' + percent(segment.share) + ')'
+      "
+    >
+      @if (variant() === 'tall' && segment.share >= 0.08 && !segment.pattern) {
+        <span
+          class="pointer-events-none text-xs font-semibold"
+          [style.color]="segment.ink ?? '#ffffff'"
+          aria-hidden="true"
+        >
+          {{ percent(segment.share) }}
+        </span>
+      }
+      <span
+        role="tooltip"
+        class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2.5 py-1.5 text-xs text-white shadow-lg group-hover:block group-focus-visible:block"
+      >
+        {{ segment.label }} ·
+        <strong>{{ count(segment.value) }}</strong>
+        ·
+        {{ percent(segment.share) }}
+      </span>
+    </div>
+  } @empty {
+    <div class="w-full rounded bg-zinc-100"></div>
+  }
+</div>
+@if (legend()) {
+  <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs" [attr.aria-label]="label()">
+    @for (segment of visible(); track segment.key) {
+      <li class="flex items-center gap-2">
+        <span
+          class="size-2.5 shrink-0 rounded-sm"
+          [style.background]="fill(segment)"
+          aria-hidden="true"
+        ></span>
+        <span class="text-zinc-600">{{ segment.label }}</span>
+        <strong class="font-semibold text-ink">{{ count(segment.value) }}</strong>
+      </li>
+    }
+  </ul>
+}

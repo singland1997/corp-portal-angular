@@ -1,23 +1,18 @@
-import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { corporateResource } from '@core/api/corporate-resource';
-import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { CardComponent } from '@shared/ui/card/card.component';
+import { DialogModule } from 'primeng/dialog';
 import { ChartComponent } from '@shared/ui/chart/chart.component';
 import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
-import { StatCardComponent } from '@shared/ui/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
-import {
-  createPoolChartData,
-  createUsageChartData,
-  POOL_CHART_OPTIONS,
-  USAGE_CHART_OPTIONS,
-} from './dashboard.charts';
+import { formatDataSize, MB_PER_TB } from '@shared/utils/data-size';
+import { PORTAL_COLORS } from '@core/theme/portal-colors';
+import { createUsageChartData, USAGE_CHART_OPTIONS } from './dashboard.charts';
 import { DashboardRepository } from './data-access/dashboard.repository';
-import { isKnownOperation, SimActivity } from './dashboard.models';
+import { DashboardSnapshot, isKnownOperation, SimActivity } from './dashboard.models';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,19 +22,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    DecimalPipe,
     CardComponent,
     ChartComponent,
     FeedbackStateComponent,
     PageHeaderComponent,
-    StatCardComponent,
     StatusBadgeComponent,
+    DialogModule,
   ],
   templateUrl: './dashboard.page.html',
 })
 export class DashboardPage {
   readonly i18n = inject(LocaleService);
-  readonly corporate = inject(CorporateContext);
   private readonly repository = inject(DashboardRepository);
 
   /** โหลดใหม่อัตโนมัติเมื่อเปลี่ยนองค์กร */
@@ -48,13 +41,6 @@ export class DashboardPage {
 
   // ---- ตัวเลขสรุป ----
 
-  readonly numberCounts = computed(() => ({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    suspended: 0,
-    ...this.snapshot()?.numbers,
-  }));
   /** Pool values stay unknown (null) unless the API reports both quantities. */
   readonly poolKnown = computed(() => {
     const pool = this.snapshot()?.pool;
@@ -66,31 +52,79 @@ export class DashboardPage {
     const pool = this.poolKnown();
     return pool ? pool.quotaTb - pool.usedTb : null;
   });
-  readonly poolPercentage = computed(() => {
-    const pool = this.poolKnown();
-    return pool && pool.quotaTb > 0 ? Math.round((pool.usedTb / pool.quotaTb) * 100) : null;
-  });
+  /** Pool amounts in the unit that fits (MB/GB/TB); the API reports TB. */
+  poolAmount(tb: number | null | undefined): string {
+    return tb === null || tb === undefined
+      ? '—'
+      : formatDataSize(tb * MB_PER_TB, this.i18n.locale());
+  }
   /** Known days only; unknown days are never counted as 0. */
   readonly knownDays = computed(() =>
     (this.snapshot()?.dailyUsageGb ?? []).filter((n): n is number => n !== null),
   );
-  readonly totalWeekUsageGb = computed(() =>
-    this.knownDays().length
-      ? Math.round(this.knownDays().reduce((sum, n) => sum + n, 0) * 100) / 100
-      : null,
-  );
-
-  // ---- วันที่ ----
-
-  /** วันที่ข้อมูลอัปเดตล่าสุด (`updatedAt` จาก API) ตามเวลาประเทศไทย */
-  readonly updatedLabel = computed(() => {
-    const updatedAt = this.snapshot()?.updatedAt;
-    if (!updatedAt) return '';
-    return new Intl.DateTimeFormat(this.i18n.locale() === 'th' ? 'th-TH-u-ca-gregory' : 'en-GB', {
-      timeZone: 'Asia/Bangkok',
-      dateStyle: 'medium',
-    }).format(new Date(updatedAt));
+  readonly selected = linkedSignal<DashboardSnapshot | null | undefined, SimActivity | null>({
+    source: this.snapshot,
+    computation: () => null,
   });
+  readonly activityColumns = [
+    'mobile',
+    'simOperation',
+    'activityTimestamp',
+    'status',
+    'actions',
+  ] as const;
+  readonly stats = computed(() => {
+    const data = this.snapshot();
+    if (!data) return [];
+    const fmt = new Intl.NumberFormat(this.i18n.locale());
+    return [
+      {
+        label: 'assignedLines',
+        value: fmt.format(data.numbers.total),
+        hint: fmt.format(data.numbers.active) + ' ' + this.i18n.t('active'),
+        desktop: false,
+      },
+      {
+        label: 'inactive',
+        value: fmt.format(data.numbers.inactive),
+        hint: this.i18n.t('inactiveLines'),
+        desktop: true,
+      },
+      {
+        label: 'suspended',
+        value: fmt.format(data.numbers.suspended),
+        hint: this.i18n.t('restrictedLines'),
+        desktop: true,
+      },
+      {
+        label: 'totalUsage',
+        value: this.poolAmount(data.totalUsageTb),
+        hint: this.i18n.t('usageSince') + ' ' + this.periodStartLabel(),
+        desktop: false,
+      },
+    ] as const;
+  });
+  readonly percent = computed(() => {
+    const p = this.poolKnown();
+    return p && p.quotaTb > 0 ? Math.round((p.usedTb / p.quotaTb) * 100) : null;
+  });
+  /** Used beyond the quota: the ring turns red and the card says so (never just "full"). */
+  readonly overQuota = computed(() => (this.percent() ?? 0) > 100);
+  readonly ringFill = computed(() => {
+    const percent = this.percent();
+    const track = PORTAL_COLORS.ringTrack;
+    if (percent === null) return track;
+    const fill = this.overQuota() ? PORTAL_COLORS.critical : PORTAL_COLORS.primary;
+    return `conic-gradient(${fill} ${Math.min(Math.max(percent, 0), 100)}%, ${track} 0)`;
+  });
+  readonly poolMetrics = computed(
+    () =>
+      [
+        { label: 'used', value: this.snapshot()?.pool.usedTb },
+        { label: 'remaining', value: this.remainingTb() },
+        { label: 'allocationQuota', value: this.snapshot()?.pool.quotaTb },
+      ] as const,
+  );
 
   /** ป้ายแกน x ของกราฟรายวัน นับจาก `periodStart` ทีละวัน */
   readonly dailyLabels = computed(() => {
@@ -110,8 +144,20 @@ export class DashboardPage {
 
   // ---- กราฟ ----
 
-  readonly lineOptions = USAGE_CHART_OPTIONS;
-  readonly donutOptions = POOL_CHART_OPTIONS;
+  readonly dailyRange = computed(() =>
+    this.dailyLabels().length ? [this.dailyLabels()[0], this.dailyLabels().at(-1)].join(' – ') : '',
+  );
+  readonly periodStartLabel = computed(() => {
+    const start = this.snapshot()?.periodStart;
+    return start
+      ? new Intl.DateTimeFormat(this.i18n.locale(), {
+          day: 'numeric',
+          month: 'short',
+          timeZone: 'UTC',
+        }).format(new Date(start + 'T00:00:00Z'))
+      : '—';
+  });
+  readonly chartOptions = USAGE_CHART_OPTIONS;
 
   readonly usageData = computed(() =>
     createUsageChartData(
@@ -120,15 +166,6 @@ export class DashboardPage {
       this.i18n.t('used'),
     ),
   );
-  readonly poolData = computed(() => {
-    const pool = this.poolKnown();
-    return pool
-      ? createPoolChartData(pool.usedTb, Math.max(0, pool.quotaTb - pool.usedTb), [
-          this.i18n.t('used'),
-          this.i18n.t('remaining'),
-        ])
-      : null;
-  });
 
   /** คำอธิบายกราฟสำหรับ screen reader */
   readonly usageChartLabel = computed(
@@ -137,12 +174,6 @@ export class DashboardPage {
         .map((n) => (n === null ? this.i18n.t('unknown') : `${n} GB`))
         .join(', ')}`,
   );
-  readonly poolChartLabel = computed(() => {
-    const pool = this.poolKnown();
-    return pool
-      ? `${this.i18n.t('used')} ${pool.usedTb} TB; ${this.i18n.t('remaining')} ${this.remainingTb()} TB`
-      : this.i18n.t('unknown');
-  });
 
   operationLabel(item: SimActivity): string {
     return isKnownOperation(item.operation) ? this.i18n.t(item.operation) : item.operation;

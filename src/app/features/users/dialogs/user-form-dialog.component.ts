@@ -27,7 +27,14 @@ import { featureMessages } from '@shared/utils/feature-messages';
 import { UsersApi } from '../data-access/users-api';
 import { ROLE_LABEL, usersEn, usersTh } from '../users.messages';
 import { InviteLinkComponent } from '../invite-link/invite-link.component';
-import { Invite, PLATFORM_ROLES, UserDraft, UserRow, USER_STATUSES } from '../users.models';
+import {
+  Invite,
+  PLATFORM_ROLES,
+  UserDraft,
+  UserRow,
+  SalesAssignment,
+  USER_STATUSES,
+} from '../users.models';
 
 /** created มีลิงก์ตั้งรหัสผ่านมาด้วย */
 export interface SavedEvent {
@@ -62,7 +69,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export class UserFormDialogComponent {
   readonly visible = model(false);
   readonly user = input<UserRow>();
-  readonly users = input<readonly UserRow[]>([]);
+  readonly assignments = input<readonly SalesAssignment[]>([]);
+  readonly assignmentsReady = input(true);
   readonly saved = output<SavedEvent>();
   readonly refreshUsers = output<void>();
 
@@ -90,11 +98,9 @@ export class UserFormDialogComponent {
   );
   readonly salesCorporateOptions = computed(() =>
     this.corporate.options().map((corporate) => {
-      const owner = this.users().find(
-        (user) =>
-          user.role === 'sales' &&
-          user.id !== this.user()?.id &&
-          user.corporates.some((assigned) => assigned.id === corporate.value),
+      const owner = this.assignments().find(
+        (assignment) =>
+          assignment.userId !== this.user()?.id && assignment.corporateId === corporate.value,
       );
       return {
         ...corporate,
@@ -114,6 +120,7 @@ export class UserFormDialogComponent {
   }
 
   async submit(): Promise<void> {
+    if (!this.assignmentsReady()) return;
     const problem = this.validate();
     this.error.set(problem);
     if (problem || this.busy()) return;

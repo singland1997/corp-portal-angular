@@ -1,5 +1,6 @@
-/** Placeholder for values the source does not provide. Never rendered as 0. */
 export const UNKNOWN_VALUE = '—';
+export const MB_PER_GB = 1024;
+export const MB_PER_TB = MB_PER_GB * MB_PER_GB;
 
 export function formatDataSize(
   megabytes: number | null | undefined,
@@ -10,7 +11,7 @@ export function formatDataSize(
     return UNKNOWN_VALUE;
   const absolute = Math.abs(megabytes);
   const divisor =
-    maxUnit === 'TB' && absolute >= 1_000_000 ? 1_000_000 : absolute >= 1000 ? 1000 : 1;
-  const unit = divisor === 1_000_000 ? 'TB' : divisor === 1000 ? 'GB' : 'MB';
+    maxUnit === 'TB' && absolute >= MB_PER_TB ? MB_PER_TB : absolute >= MB_PER_GB ? MB_PER_GB : 1;
+  const unit = divisor === MB_PER_TB ? 'TB' : divisor === MB_PER_GB ? 'GB' : 'MB';
   return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(megabytes / divisor)} ${unit}`;
 }

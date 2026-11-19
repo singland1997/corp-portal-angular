@@ -1,4 +1,5 @@
 import { effect, inject, Injectable } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSessionStore } from './auth-session.store';
 import { AuthApi } from './auth-api.service';
 import { RefreshTokenStore } from './refresh-token.store';
@@ -31,9 +32,14 @@ export class SessionRefresh {
               }
             },
             // Retrying a consumed refresh token is unsafe if its response was lost.
-            error: () => {
-              if (this.session.session()?.accessToken === original.accessToken)
+            error: (error) => {
+              if (this.session.session()?.accessToken !== original.accessToken) return;
+              if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
                 this.session.clear();
+              } else {
+                // Keep the unexpired access token, but never replay an ambiguous rotation.
+                this.session.renewalFailed.set(true);
+              }
             },
           });
         },

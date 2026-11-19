@@ -191,7 +191,7 @@
       <p-button
         type="submit"
         [loading]="busy()"
-        [disabled]="busy()"
+        [disabled]="busy() || !assignmentsReady()"
         [label]="t(isEdit() ? 'save' : 'createUser')"
         [ariaLabel]="t(isEdit() ? 'save' : 'createUser')"
       />

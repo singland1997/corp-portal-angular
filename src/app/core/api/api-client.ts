@@ -12,9 +12,9 @@ export class ApiClient {
   private headers(corporateId?: string): HttpHeaders {
     return new HttpHeaders(corporateId ? { 'X-Corporate-ID': corporateId } : {});
   }
-  get<T>(path: string, corporateId?: string) {
+  get<T>(path: string, corporateId?: string, params?: Record<string, string | number | boolean>) {
     return this.http
-      .get<T>(this.base + path, { headers: this.headers(corporateId) })
+      .get<T>(this.base + path, { headers: this.headers(corporateId), params })
       .pipe(timeout(30000));
   }
   post<T>(path: string, body: unknown, corporateId?: string) {

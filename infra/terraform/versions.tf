@@ -8,7 +8,7 @@ terraform {
     }
   }
 
-  # The state bucket is provisioned separately; Jenkins supplies bucket/key/region.
+  # The state bucket is provisioned separately; scripts/ci/deploy.sh supplies bucket/key/region.
   backend "s3" {
     encrypt      = true
     use_lockfile = true

@@ -1,3 +1,5 @@
+import { firstValueFrom } from 'rxjs';
+import { INITIAL_QUERY, pageParams, sameTableQuery } from '@core/api/pagination';
 import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -7,6 +9,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -20,8 +23,7 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { TranslationKey } from '@core/i18n/translation.models';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { DataTableComponent } from '@shared/ui/data-table/data-table.component';
-import { TableColumn } from '@shared/ui/data-table/data-table.models';
-import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
+import { TableColumn, TableQuery } from '@shared/ui/data-table/data-table.models';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { downloadCsv, toCsv } from '@shared/utils/csv';
 import { formatDataSize } from '@shared/utils/data-size';
@@ -51,7 +53,6 @@ type TableRow = ReportRow & { id: string };
     SelectModule,
     CardComponent,
     DataTableComponent,
-    FeedbackStateComponent,
     PageHeaderComponent,
   ],
   templateUrl: './reports.page.html',
@@ -93,6 +94,11 @@ export class ReportsPage {
 
   // ---- ข้อมูล ----
 
+  readonly table = viewChild(DataTableComponent);
+  readonly query = signal<TableQuery>(INITIAL_QUERY, { equal: sameTableQuery });
+  readonly total = signal(0);
+  readonly exporting = signal(false);
+  readonly exportError = signal<TranslationKey | null>(null);
   readonly rows = signal<ReportRow[]>([]);
   readonly loading = signal(false);
   readonly error = signal<TranslationKey | null>(null);
@@ -110,6 +116,17 @@ export class ReportsPage {
   );
 
   constructor() {
+    effect(() => {
+      this.corporate.current()?.id;
+      this.reportId();
+      this.from();
+      this.to();
+      untracked(() => {
+        this.query.set(INITIAL_QUERY);
+        this.table()?.setSearch('');
+        this.exportError.set(null);
+      });
+    });
     // โหลดใหม่เมื่อเปลี่ยนองค์กร รายงาน หรือช่วงวันที่ (ยกเลิก request เก่าอัตโนมัติ)
     effect((onCleanup) => {
       const corporateId = this.corporate.current()?.id;
@@ -117,6 +134,8 @@ export class ReportsPage {
       const from = report?.dated ? this.from() : '';
       const to = report?.dated ? this.to() : '';
       this.revision();
+      const query = this.query();
+      this.total.set(0);
       this.rows.set([]);
       this.error.set(null);
       this.loading.set(false);
@@ -126,17 +145,20 @@ export class ReportsPage {
         this.loading.set(true);
         this.error.set(null);
       });
-      const subscription = this.api.rows(corporateId, report.id, from, to).subscribe({
-        next: (rows) => {
-          this.rows.set(rows);
-          this.loading.set(false);
-        },
-        error: (failure) => {
-          this.rows.set([]);
-          this.error.set(apiErrorMessage(failure));
-          this.loading.set(false);
-        },
-      });
+      const subscription = this.api
+        .page(corporateId, report.id, { ...pageParams(query, report.columns[0].field), from, to })
+        .subscribe({
+          next: (page) => {
+            this.rows.set(page.items);
+            this.total.set(page.total);
+            this.loading.set(false);
+          },
+          error: (failure) => {
+            this.rows.set([]);
+            this.error.set(apiErrorMessage(failure));
+            this.loading.set(false);
+          },
+        });
       onCleanup(() => subscription.unsubscribe());
     });
   }
@@ -161,13 +183,63 @@ export class ReportsPage {
     return column ? this.format(row[field], column) : String(row[field] ?? '');
   }
 
-  exportCsv(): void {
-    const report = this.report();
-    if (!report) return;
-    const headings = report.columns.map((c) => this.t(c.header));
-    const rows = this.rows().map((row) => report.columns.map((c) => this.format(row[c.field], c)));
-    const range = report.dated && (this.from() || this.to()) ? `-${this.from()}_${this.to()}` : '';
-    downloadCsv(this.document, `${report.id}${range}.csv`, toCsv(headings, rows));
+  async exportCsv(): Promise<void> {
+    const report = this.report(),
+      corporateId = this.corporate.current()?.id;
+    if (!report || !corporateId || this.exporting()) return;
+    const from = report.dated ? this.from() : '',
+      to = report.dated ? this.to() : '';
+    const params = {
+      ...pageParams(this.query(), report.columns[0].field),
+      from,
+      to,
+      pageSize: 100,
+      revision: true,
+    };
+    this.exporting.set(true);
+    this.exportError.set(null);
+    const current = () =>
+      this.corporate.current()?.id === corporateId &&
+      this.report() === report &&
+      (!report.dated || (this.from() === from && this.to() === to));
+    try {
+      const rows: ReportRow[] = [];
+      let revision: string | null | undefined,
+        total = 0;
+      for (let page = 1; ; page++) {
+        const response = await firstValueFrom(
+          this.api.page(corporateId, report.id, { ...params, page }),
+        );
+        if (!current()) return;
+        if (page === 1) {
+          revision = response.revision;
+          total = response.total;
+        }
+        if (!revision || response.revision !== revision || response.total !== total) {
+          this.exportError.set('dataConflict');
+          return;
+        }
+        if (total > 100_000) {
+          this.exportError.set('exportTooLarge');
+          return;
+        }
+        rows.push(...response.items);
+        if (rows.length >= total) break;
+        if (response.items.length === 0) {
+          this.exportError.set('dataConflict');
+          return;
+        }
+      }
+      const headings = report.columns.map((column) => this.t(column.header));
+      const cells = rows.map((row) =>
+        report.columns.map((column) => this.format(row[column.field], column)),
+      );
+      downloadCsv(this.document, report.id + '.csv', toCsv(headings, cells));
+    } catch (error) {
+      if (current()) this.exportError.set(apiErrorMessage(error));
+    } finally {
+      this.exporting.set(false);
+    }
   }
 
   private format(value: string | number | null | undefined, column: ReportColumn): string {

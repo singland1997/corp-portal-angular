@@ -21,23 +21,28 @@ import { CardComponent } from '@shared/ui/card/card.component';
 import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog.component';
 import { DataTableComponent } from '@shared/ui/data-table/data-table.component';
 import { TableActionEvent, TableColumn } from '@shared/ui/data-table/data-table.models';
-import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { formatDataSize, UNKNOWN_VALUE } from '@shared/utils/data-size';
 import {
   COUNTED_STATUSES,
   MobileNumber,
-  matchesStatus,
   MobileNumberStatusFilter,
   NumberAction,
-  summarizeLots,
+  NumberCounts,
   CommandResult,
 } from './corporate.models';
+import {
+  BarSegment,
+  SegmentedBarComponent,
+} from '@shared/ui/segmented-bar/segmented-bar.component';
 import { CorporateDataService } from './data-access/corporate-data.service';
+import { PackageQuota, PackagesApi } from './data-access/packages-api';
+import { corporateResource } from '@core/api/corporate-resource';
+import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 
 /** แถวในตาราง = เลขหมาย + ปริมาณใช้งานที่จัดรูปแบบแล้ว */
-type NumberRow = MobileNumber & { usage: string };
+type NumberRow = MobileNumber & { usage: string; quotaText: string };
 
 /** Lot filter value for numbers whose current lot is unknown (null). */
 const UNKNOWN_LOT = '__unknown__';
@@ -62,6 +67,7 @@ const UNKNOWN_LOT = '__unknown__';
     FeedbackStateComponent,
     PageHeaderComponent,
     StatusBadgeComponent,
+    SegmentedBarComponent,
   ],
   templateUrl: './corporate.page.html',
 })
@@ -69,8 +75,165 @@ export class CorporatePage {
   readonly i18n = inject(LocaleService);
   readonly corporate = inject(CorporateContext);
   readonly corporateData = inject(CorporateDataService);
+  private readonly packagesApi = inject(PackagesApi);
+  /** Packages the corporate's numbers currently use (read-only). */
+  readonly packages = corporateResource((id) => this.packagesApi.list(id));
+
+  /** One line per quota: "DATA · VOLUME · 10,000 MB", "DATA · UNLIMITED". */
+  packageQuotaText(quotas: readonly PackageQuota[]): string {
+    if (!quotas.length) return UNKNOWN_VALUE;
+    const locale = this.i18n.locale() === 'th' ? 'th-TH' : 'en-US';
+    return quotas
+      .map((q) => {
+        const kind =
+          q.quotaType === null || q.quotaType === 'unknown' ? this.i18n.t('unknown') : q.quotaType;
+        const value = q.amount ?? q.rawAmount;
+        const unit = q.amount !== null ? q.unit : q.rawUom;
+        const amount =
+          q.quotaType === 'UNLIMITED' || value === null
+            ? null
+            : `${value.toLocaleString(locale)}${unit ? ` ${unit}` : ''}`;
+        return [q.serviceType ?? this.i18n.t('unknown'), kind, amount]
+          .filter((part) => part !== null)
+          .join(' · ');
+      })
+      .join('\n');
+  }
+
+  /** Baht only when the server confirmed the price scale; otherwise "—" (never the raw value). */
+  packagePriceText(priceThb: number | null): string {
+    return priceThb === null
+      ? UNKNOWN_VALUE
+      : new Intl.NumberFormat(this.i18n.locale() === 'th' ? 'th-TH' : 'en-US', {
+          style: 'currency',
+          currency: 'THB',
+        }).format(priceThb);
+  }
   readonly table = viewChild(DataTableComponent);
   readonly unknownValue = UNKNOWN_VALUE;
+
+  readonly locale = computed(() => (this.i18n.locale() === 'th' ? 'th-TH' : 'en-US'));
+  /**
+   * Avatar initials: first letter of the first two words. Thai leading vowels (เ แ โ ใ ไ)
+   * are skipped so "แก้ไข" gives "ก", not a lone vowel.
+   */
+  readonly initials = computed(() =>
+    this.corporate
+      .name()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => [...word].find((c) => /\p{L}/u.test(c) && !/[เ-ไ]/.test(c)))
+      .filter((c): c is string => !!c)
+      .join('')
+      .toUpperCase(),
+  );
+  /** Corporate profile rows (CRM plain-text values only; unknown or blank shows "—"). */
+  readonly profileFields = computed(() => {
+    const account = this.corporate.current();
+    const text = (value: string | null | undefined) => (value?.trim() ? value : UNKNOWN_VALUE);
+    return [
+      {
+        key: 'contact',
+        icon: 'pi-envelope',
+        label: this.i18n.t('contact'),
+        value: text(account?.contactEmail),
+      },
+      {
+        key: 'contactPerson',
+        icon: 'pi-user',
+        label: this.i18n.t('contactPerson'),
+        value: text(account?.contactName),
+        sub: account?.contactTelephone?.trim() || null,
+      },
+      {
+        key: 'telephone',
+        icon: 'pi-phone',
+        label: this.i18n.t('companyTelephone'),
+        value: text(account?.telephone),
+      },
+      {
+        key: 'taxId',
+        icon: 'pi-id-card',
+        label: this.i18n.t('taxId'),
+        value: text(account?.taxId),
+      },
+      {
+        key: 'industry',
+        icon: 'pi-briefcase',
+        label: this.i18n.t('industry'),
+        value: this.withOther(account?.industry, account?.industryOther),
+      },
+      {
+        key: 'legalEntityType',
+        icon: 'pi-building',
+        label: this.i18n.t('legalEntityType'),
+        value: this.withOther(account?.legalEntityType, account?.legalEntityTypeOther),
+      },
+    ];
+  });
+  /** Numbers by status for the whole corporate (server counts, never the visible page). */
+  readonly statusSegments = computed(() => this.segmentsFor(this.counts()));
+
+  /**
+   * Status parts in a fixed order with the reserved status colors; numbers whose CRM status
+   * has no Portal mapping are "unknown" (striped, never folded into another status).
+   */
+  segmentsFor(counts: NumberCounts & { terminated?: number }): BarSegment[] {
+    const terminated = counts.terminated ?? 0;
+    const known = counts.active + counts.inactive + counts.suspended + terminated;
+    return [
+      { key: 'active', label: this.i18n.t('active'), value: counts.active, color: '#0ca30c' },
+      {
+        key: 'inactive',
+        label: this.i18n.t('inactive'),
+        value: counts.inactive,
+        color: '#a1a1aa',
+        ink: '#18181b',
+      },
+      {
+        key: 'suspended',
+        label: this.i18n.t('suspended'),
+        value: counts.suspended,
+        color: '#fab219',
+        ink: '#0b0b0b',
+      },
+      {
+        key: 'terminated',
+        label: this.i18n.t('terminated'),
+        value: terminated,
+        color: '#d03b3b',
+      },
+      {
+        key: 'unknown',
+        label: this.i18n.t('unknown'),
+        value: Math.max(0, counts.total - known),
+        color: '#a1a1aa',
+        pattern: true,
+      },
+    ];
+  }
+
+  /** CRM value plus its "other" free text, e.g. "OTHER – Cold chain"; unknown stays "—". */
+  withOther(value: string | null | undefined, other: string | null | undefined): string {
+    const parts = [value, other].filter((part): part is string => !!part?.trim());
+    return parts.length ? parts.join(' – ') : UNKNOWN_VALUE;
+  }
+
+  /** Lot quota type label; values other than the three CRM types read as unknown. */
+  lotQuotaType(type: string | null): string {
+    switch (type) {
+      case null:
+        return UNKNOWN_VALUE;
+      case 'product-quota':
+        return this.i18n.t('productQuota');
+      case 'share-in-group':
+        return this.i18n.t('shareInGroupQuota');
+      case 'corporate-quota':
+        return this.i18n.t('corporateQuota');
+      default:
+        return this.i18n.t('unknown');
+    }
+  }
   /** Number commands need the provisioning API (capabilities come from the backend). */
   readonly suspendSupported = computed(
     () => this.corporateData.resource.data()?.capabilities.suspend ?? false,
@@ -83,12 +246,12 @@ export class CorporatePage {
 
   readonly counts = this.corporateData.counts;
   readonly countedStatuses = COUNTED_STATUSES;
-  readonly lots = computed(() => summarizeLots(this.corporateData.numbers()));
+  readonly lots = this.corporateData.lots;
 
   // ---- ตัวกรอง ----
 
-  readonly statusFilter = signal<MobileNumberStatusFilter>('all');
-  readonly lotFilter = signal<string | null>(null);
+  readonly statusFilter = this.corporateData.status;
+  readonly lotFilter = this.corporateData.lot;
 
   readonly statusOptions = computed(() => [
     { label: this.i18n.t('allStatuses'), value: 'all' },
@@ -109,15 +272,24 @@ export class CorporatePage {
     this.corporateData.numbers().map((number) => ({
       ...number,
       usage: formatDataSize(number.usageMb, this.i18n.locale(), 'GB'),
+      quotaText: this.quotaText(number),
     })),
   );
-  readonly filteredRows = computed(() =>
-    this.rows().filter(
-      (row) =>
-        matchesStatus(row.status, this.statusFilter()) &&
-        (this.lotFilter() === null || (row.lot ?? UNKNOWN_LOT) === this.lotFilter()),
-    ),
-  );
+
+  /** "remaining / total" per balance (API order); no balances → unknown, never 0. */
+  private quotaText(number: MobileNumber): string {
+    const quotas = number.quotas ?? [];
+    if (!quotas.length) return UNKNOWN_VALUE;
+    const locale = this.i18n.locale();
+    return quotas
+      .map(
+        (q) =>
+          `${formatDataSize(q.remainingMb, locale)} / ${formatDataSize(q.totalMb, locale)}` +
+          (q.capMax ? ' (Cap max)' : '') +
+          (q.expiresAt ? ` · ${this.i18n.t('expires')} ${this.formatDateTime(q.expiresAt)}` : ''),
+      )
+      .join('\n');
+  }
   readonly columns = computed<TableColumn<NumberRow>[]>(() => [
     { field: 'mobile', header: this.i18n.t('mobile'), sortable: true },
     { field: 'lot', header: this.i18n.t('lot'), sortable: true },

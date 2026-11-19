@@ -50,13 +50,14 @@ npm start
 - Admin จัดการผู้ใช้ได้ ฝ่ายขายเข้าถึงเฉพาะองค์กรที่มอบหมาย และหนึ่งองค์กรมีฝ่ายขายดูแลได้คนเดียว
 - ข้อมูลทดสอบอยู่หลังบ้านใน memory เมื่อ restart backend ข้อมูลที่แก้และ session จะหาย
 - Local ส่ง `/api` ผ่าน `proxy.conf.json` หากแก้ proxy ให้ restart frontend
-- Environment ของ Jenkins กำหนดตาม branch `dev` / `prod`; ห้ามใส่ secret ใน Angular environment
-- Frontend deploy บน S3 + CloudFront ดู [คู่มือ AWS/Jenkins](docs/aws-deployment.md)
+- CI/CD ใช้ GitHub Actions (`.github/workflows/`, ขั้นตอนจริงใน `scripts/ci/`): merge เข้า `main` deploy dev อัตโนมัติ, prod สั่งเอง; ห้ามใส่ secret ใน Angular environment
+- Frontend deploy บน S3 + CloudFront ดู [คู่มือ AWS และ deploy](docs/aws-deployment.md)
 
 ## เอกสารเพิ่มเติม
 
+- [วิธีทำงานกับ AI (AI-native SDLC), คำสั่งตรวจ และสิ่งที่มักพลาด](AGENTS.md) · [เกณฑ์ review](REVIEW.md) · งานแต่ละชิ้นอยู่ที่ `docs/work/`
 - [Component กลาง ภาษา และธีม](docs/ui-guide.md)
 - [การเชื่อม API และข้อจำกัดปัจจุบัน](docs/api-integration.md)
 - [Pooling](docs/pooling.md)
 - [Docker สำหรับทดลองในเครื่อง](docs/local-docker.md)
-- [AWS, Terraform และ Jenkins](docs/aws-deployment.md)
+- [AWS, Terraform และ GitHub Actions](docs/aws-deployment.md)

@@ -18,6 +18,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
+import { TabsModule } from 'primeng/tabs';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { CardComponent } from '@shared/ui/card/card.component';
@@ -28,7 +29,6 @@ import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { PoolingDataService } from './data-access/pooling-data.service';
-import { PoolFormDialogComponent } from './dialogs/pool-form-dialog.component';
 import { QuotaDialogComponent } from './dialogs/quota-dialog.component';
 import { PoolMessageKey } from './pooling.messages';
 import { DataPool, matchesDateRange, PoolMember, QuotaDirection } from './pooling.models';
@@ -44,7 +44,7 @@ const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
 
 /**
  * หน้า Data Pool มี 2 โหมดตาม query `?pool=<id>`
- * - ไม่มี `pool` → รายการ pool + สรุป pool ที่เลือก
+ * - ไม่มี `pool` → รายการ pool
  * - มี `pool`   → รายละเอียด pool นั้น
  *
  * Dialog สร้าง/แก้ pool และปรับโควตาแยกอยู่ใน `dialogs/`
@@ -62,13 +62,13 @@ const CHART_COLORS = ['#facc15', '#e4e4e7', '#ef4444'];
     MessageModule,
     ProgressBarModule,
     SelectModule,
+    TabsModule,
     CardComponent,
     ChartComponent,
     DataTableComponent,
     FeedbackStateComponent,
     PageHeaderComponent,
     StatusBadgeComponent,
-    PoolFormDialogComponent,
     QuotaDialogComponent,
   ],
   templateUrl: './pooling.page.html',
@@ -88,12 +88,9 @@ export class PoolingPage {
   // ---- pool ที่เลือก ----
 
   readonly detailMode = computed(() => this.params().has('pool'));
-  readonly selectedPoolId = signal('');
-  /** ลำดับการเลือก: `?pool=` ใน URL → pool ที่คลิก → pool แรก */
-  readonly pool = computed(() => {
-    const id = this.params().get('pool') ?? (this.selectedPoolId() || this.data.pools()[0]?.id);
-    return this.data.pools().find((p) => p.id === id) ?? null;
-  });
+  readonly pool = computed(
+    () => this.data.pools().find((p) => p.id === this.params().get('pool')) ?? null,
+  );
   /** `null` when the pool quantity is unknown (never computed as 0). */
   readonly remaining = computed(() => {
     const p = this.pool();
@@ -107,7 +104,7 @@ export class PoolingPage {
   });
   readonly hasQuota = computed(() => {
     const p = this.pool();
-    return !!p && ((p.quotaMb ?? 0) > 0 || (p.usedMb ?? 0) > 0);
+    return !!p && p.usedMb !== null && p.quotaMb !== null && (p.quotaMb > 0 || p.usedMb > 0);
   });
   readonly overQuota = computed(() => (this.remaining() ?? 0) < 0);
   /** Quota changes need the upstream command API and a known current quota. */
@@ -154,9 +151,6 @@ export class PoolingPage {
     { value: 'all', label: this.t('allTypes') },
     ...(['increase', 'decrease'] as const).map((value) => ({ value, label: this.t(value) })),
   ]);
-  readonly poolOptions = computed(() =>
-    this.data.pools().map((p) => ({ label: p.name, value: p.id })),
-  );
 
   // ---- ข้อมูลในตาราง ----
 
@@ -166,10 +160,12 @@ export class PoolingPage {
       .filter((p) => this.filterStatus() === 'all' || p.status === this.filterStatus())
       .map((p) => ({
         ...p,
-        total: this.formatData(p.quotaMb),
-        remaining: this.formatData(
-          p.quotaMb !== null && p.usedMb !== null ? p.quotaMb - p.usedMb : null,
-        ),
+        name: this.poolName(p),
+        remainingMb: p.quotaMb !== null && p.usedMb !== null ? p.quotaMb - p.usedMb : null,
+        utilization:
+          p.quotaMb !== null && p.quotaMb > 0 && p.usedMb !== null
+            ? (p.usedMb / p.quotaMb) * 100
+            : null,
       })),
   );
 
@@ -232,9 +228,12 @@ export class PoolingPage {
 
   readonly poolColumns = computed<TableColumn<ReturnType<typeof this.pools>[number]>[]>(() => [
     { field: 'name', header: this.t('poolName'), sortable: true },
-    { field: 'corporate', header: this.t('corporate') },
-    { field: 'total', header: this.t('total') },
-    { field: 'remaining', header: this.t('remaining') },
+    { field: 'lot', header: this.t('lot') },
+    { field: 'memberCount', header: this.t('members'), sortable: true },
+    { field: 'usedMb', header: this.t('used'), sortable: true },
+    { field: 'remainingMb', header: this.t('remaining'), sortable: true },
+    { field: 'utilization', header: this.t('utilization'), sortable: true },
+    { field: 'quotaMb', header: this.t('total'), sortable: true },
     { field: 'status', header: this.t('status'), type: 'status', sortable: true },
   ]);
   readonly memberColumns = computed<TableColumn<ReturnType<typeof this.memberRows>[number]>[]>(
@@ -265,7 +264,6 @@ export class PoolingPage {
   );
   readonly poolActions = computed(() => [
     { id: 'details', label: this.t('details'), icon: 'pi pi-eye' },
-    { id: 'edit', label: this.t('edit'), icon: 'pi pi-pencil' },
   ]);
   readonly memberActions = computed(() => [
     { id: 'details', label: this.t('details'), icon: 'pi pi-eye' },
@@ -290,14 +288,17 @@ export class PoolingPage {
   readonly chartOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '72%',
-    plugins: { legend: { display: false } },
+    cutout: '75%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: (context) => context.label + ' · ' + this.formatData(context.parsed) },
+      },
+    },
   };
 
   // ---- dialog และข้อความแจ้ง ----
 
-  readonly formVisible = signal(false);
-  readonly editingPool = signal<DataPool | undefined>(undefined);
   readonly quotaVisible = signal(false);
   readonly quotaPoolId = signal('');
   readonly quotaDirection = signal<QuotaDirection>('increase');
@@ -321,6 +322,13 @@ export class PoolingPage {
     return this.text.formatData(megabytes, maxUnit);
   }
 
+  /** CRM pools may have no name: show the lot, else a short form of the CRM group id. */
+  poolName(pool: DataPool): string {
+    return (
+      pool.name ?? pool.lot ?? `${this.t('pool')} ${pool.id.split('#').pop()?.slice(0, 8) ?? ''}`
+    );
+  }
+
   formatDate(iso: string | null): string {
     return this.text.formatDate(iso);
   }
@@ -339,20 +347,11 @@ export class PoolingPage {
 
   // ---- การเลือกและนำทาง ----
 
-  selectPool(id: string): void {
-    this.selectedPoolId.set(id);
+  /** ปุ่มในตาราง pool: ดูรายละเอียด (pool มาจาก CRM แก้ไขใน Portal ไม่ได้) */
+  onPoolAction(event: TableActionEvent<DataPool>): void {
     this.clearTransactionFilters();
     this.department.set('all');
     this.notice.set(null);
-  }
-
-  /** ปุ่มในตาราง pool: แก้ไข หรือ ดูรายละเอียด */
-  onPoolAction(event: TableActionEvent<DataPool>): void {
-    if (event.action === 'edit') {
-      this.openForm(event.row);
-      return;
-    }
-    this.selectPool(event.row.id);
     this.setPoolQuery(event.row.id);
   }
 
@@ -361,11 +360,6 @@ export class PoolingPage {
   }
 
   // ---- dialog ----
-
-  openForm(pool?: DataPool): void {
-    this.editingPool.set(pool);
-    this.formVisible.set(true);
-  }
 
   openQuota(direction: QuotaDirection): void {
     const pool = this.pool();
@@ -402,8 +396,6 @@ export class PoolingPage {
   }
 
   private resetForCorporate(): void {
-    this.selectedPoolId.set('');
-    this.formVisible.set(false);
     this.quotaVisible.set(false);
     this.inventoryVisible.set(false);
     this.member.set(null);

@@ -1,3 +1,4 @@
+import { AuthSessionStore } from '@core/auth/auth-session.store';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -33,6 +34,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 })
 export class LoginPage {
   readonly i18n = inject(LocaleService);
+  readonly session = inject(AuthSessionStore);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly submitted = signal(false);

@@ -41,16 +41,19 @@ describe('Session refresh lifecycle', () => {
     expect(session.session()?.refreshToken).toBe('b'.repeat(64));
     expect(sessionStorage.getItem('corp-portal.refresh-token')).toBe('b'.repeat(64));
   });
-  it('clears the session after an ambiguous refresh failure without retrying', () => {
+  it('keeps the current session until expiry after a transient refresh failure without replaying the token', () => {
     session.set(testSession());
     TestBed.tick();
     vi.advanceTimersByTime(840000);
     http
       .expectOne('/api/v1/auth/sessions/refresh')
       .flush({}, { status: 504, statusText: 'Timeout' });
-    expect(session.user()).toBeNull();
+    expect(session.user()?.id).toBe('user');
+    expect(session.renewalFailed()).toBe(true);
+    expect(sessionStorage.getItem('corp-portal.refresh-token')).toBeNull();
     TestBed.tick();
-    vi.advanceTimersByTime(900000);
+    vi.advanceTimersByTime(60000);
+    expect(session.user()).toBeNull();
     http.expectNone('/api/v1/auth/sessions/refresh');
   });
   it('cancels a pending refresh on logout', () => {

@@ -1,16 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { readResource } from '@core/api/read-resource';
+import { INITIAL_QUERY, pageParams, sameTableQuery } from '@core/api/pagination';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
-import { apiErrorMessage } from '@core/api/api-error';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
-import { TranslationKey } from '@core/i18n/translation.models';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { DataTableComponent } from '@shared/ui/data-table/data-table.component';
-import { TableActionEvent, TableColumn } from '@shared/ui/data-table/data-table.models';
-import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
+import { TableActionEvent, TableColumn, TableQuery } from '@shared/ui/data-table/data-table.models';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
 import { featureMessages } from '@shared/utils/feature-messages';
 import { UsersApi } from './data-access/users-api';
@@ -36,7 +44,6 @@ type Row = UserRow & { no: number; corporateLabel: string; roleLabel: string };
     SelectModule,
     CardComponent,
     DataTableComponent,
-    FeedbackStateComponent,
     PageHeaderComponent,
     UserFormDialogComponent,
     InviteLinkComponent,
@@ -51,15 +58,27 @@ export class UsersPage {
 
   // ---- โหลดข้อมูล ----
 
-  readonly users = signal<UserRow[]>([]);
-  readonly loading = signal(true);
-  readonly loadError = signal<TranslationKey | null>(null);
-
   // ---- ตัวกรอง (ช่องค้นหาชื่อ/อีเมลอยู่ในตาราง) ----
 
   readonly corporateFilter = signal<string | null>(null);
   readonly roleFilter = signal<UserRole | null>(null);
   readonly statusFilter = signal<UserStatus | null>(null);
+  readonly table = viewChild(DataTableComponent);
+  readonly query = signal<TableQuery>(INITIAL_QUERY, { equal: sameTableQuery });
+  readonly resource = readResource(
+    () => ({
+      ...pageParams(this.query(), 'name'),
+      ...(this.corporateFilter() ? { corporate: this.corporateFilter()! } : {}),
+      ...(this.roleFilter() ? { role: this.roleFilter()! } : {}),
+      ...(this.statusFilter() ? { status: this.statusFilter()! } : {}),
+    }),
+    (params) => this.api.page(params),
+  );
+  readonly users = computed(() => this.resource.data()?.items ?? []);
+  readonly owners = readResource(
+    () => true,
+    () => this.api.assignments(),
+  );
 
   readonly corporateOptions = computed(() => [
     { value: null, label: this.t('allCorporates') },
@@ -78,26 +97,24 @@ export class UsersPage {
   // ---- ตาราง ----
 
   readonly rows = computed<Row[]>(() =>
-    this.users()
-      .filter((user) => this.matchesFilters(user))
-      .map((user, index) => ({
-        ...user,
-        no: index + 1,
-        corporateLabel:
-          user.role === 'sales'
-            ? user.corporates
-                .map((c) => (this.i18n.locale() === 'th' ? (c.nameTh ?? c.name) : c.name))
-                .join(', ')
-            : (user.corporateName ?? this.t('platformScope')),
-        roleLabel: this.t(ROLE_LABEL[user.role]),
-      })),
+    this.users().map((user, index) => ({
+      ...user,
+      no: (this.query().page - 1) * this.query().pageSize + index + 1,
+      corporateLabel:
+        user.role === 'sales'
+          ? user.corporates
+              .map((c) => (this.i18n.locale() === 'th' ? (c.nameTh ?? c.name) : c.name))
+              .join(', ')
+          : (user.corporateName ?? this.t('platformScope')),
+      roleLabel: this.t(ROLE_LABEL[user.role]),
+    })),
   );
   readonly columns = computed<TableColumn<Row>[]>(() => [
     { field: 'no', header: this.t('no'), width: '4rem' },
     { field: 'name', header: this.t('name'), sortable: true },
     { field: 'email', header: this.t('email'), sortable: true },
-    { field: 'corporateLabel', header: this.t('corporate'), sortable: true },
-    { field: 'roleLabel', header: this.t('role'), sortable: true },
+    { field: 'corporateLabel', header: this.t('corporate') },
+    { field: 'roleLabel', header: this.t('role') },
     { field: 'status', header: this.t('status'), type: 'status', sortable: true },
   ]);
   readonly actions = computed(() => [{ id: 'edit', label: this.t('edit'), icon: 'pi pi-pencil' }]);
@@ -111,23 +128,20 @@ export class UsersPage {
   readonly newInvite = signal<Invite | null>(null);
 
   constructor() {
-    this.load();
+    effect(() => {
+      this.corporateFilter();
+      this.roleFilter();
+      this.statusFilter();
+      untracked(() => {
+        this.query.update((query) => ({ ...query, page: 1 }));
+        this.table()?.reset();
+      });
+    });
   }
 
-  /** โหลดรายชื่อ (โหลดซ้ำหลังบันทึกจะไม่แสดงหน้า loading ทับตาราง) */
   load(): void {
-    this.loading.set(this.users().length === 0);
-    this.loadError.set(null);
-    this.api.list().subscribe({
-      next: (users) => {
-        this.users.set(users);
-        this.loading.set(false);
-      },
-      error: (failure) => {
-        this.loadError.set(apiErrorMessage(failure));
-        this.loading.set(false);
-      },
-    });
+    this.resource.reload();
+    this.owners.reload();
   }
 
   clearFilters(): void {
@@ -137,7 +151,7 @@ export class UsersPage {
   }
 
   openCreate(): void {
-    this.load();
+    this.owners.reload();
     this.editingUser.set(undefined);
     this.notice.set(null);
     this.newInvite.set(null);
@@ -157,21 +171,5 @@ export class UsersPage {
     this.notice.set(event.kind === 'created' ? 'createdWithInvite' : 'saved');
     this.newInvite.set(event.invite ?? null);
     this.load();
-  }
-
-  private matchesFilters(user: UserRow): boolean {
-    const corporate = this.corporateFilter();
-    const corporateMatches =
-      corporate === null ||
-      (corporate === 'platform'
-        ? user.userType === 'platform'
-        : user.role === 'sales'
-          ? user.corporates.some((c) => c.id === corporate)
-          : user.corporateId === corporate);
-    return (
-      corporateMatches &&
-      (this.roleFilter() === null || user.role === this.roleFilter()) &&
-      (this.statusFilter() === null || user.status === this.statusFilter())
-    );
   }
 }

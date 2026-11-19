@@ -1,207 +1,365 @@
-@if (corporateData.resource.loading()) {
-  <cp-feedback-state kind="loading" />
-} @else if (corporateData.resource.error(); as error) {
-  <cp-feedback-state
-    kind="error"
-    [description]="i18n.t(error)"
-    (retry)="corporateData.resource.reload()"
-  />
-} @else {
-  <div class="grid gap-4 md:gap-6">
-    <cp-page-header [title]="i18n.t('inventory')" />
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <cp-card [title]="i18n.t('profile')">
-        <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div>
-            <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('companyShort') }}</dt>
-            <dd class="font-medium wrap-anywhere">{{ corporate.name() }}</dd>
-          </div>
-          <div>
-            <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('accountId') }}</dt>
-            <dd class="font-medium wrap-anywhere">
-              {{ corporate.current()?.code ?? unknownValue }}
-            </dd>
-          </div>
-          <div>
-            <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('contact') }}</dt>
-            <dd class="font-medium wrap-anywhere">
-              {{ corporate.current()?.contactEmail ?? unknownValue }}
-            </dd>
-          </div>
-          <div>
-            <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('industry') }}</dt>
-            <dd class="font-medium wrap-anywhere">
-              {{ corporate.current()?.industry ?? unknownValue }}
-            </dd>
-          </div>
-        </dl>
-        @if (corporateData.resource.data()?.updatedAt; as updatedAt) {
-          <p class="mt-5 text-xs text-muted">
-            {{ i18n.t('dataAsOf') }} {{ formatDateTime(updatedAt) }}
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="i18n.t('inventory')" />
+  <div class="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+    <cp-card>
+      <div class="flex flex-wrap items-start gap-4">
+        <span
+          class="grid size-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-lg font-semibold text-yellow-900"
+          aria-hidden="true"
+        >
+          {{ initials() || '—' }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 class="text-lg font-semibold leading-tight wrap-anywhere">{{ corporate.name() }}</h2>
+          <p class="mt-1 text-xs text-muted">
+            {{ i18n.t('accountId') }} · {{ corporate.current()?.code ?? unknownValue }}
           </p>
-        }
-      </cp-card>
-      <cp-card [title]="i18n.t('lotSummary')">
-        <div class="flex flex-wrap items-baseline gap-4">
-          <strong class="text-4xl font-semibold tracking-tight">{{ counts().total }}</strong>
-          <span class="text-muted">{{ i18n.t('totalNumbers') }}</span>
         </div>
-        <div class="mt-6 flex flex-wrap gap-4">
-          @for (status of countedStatuses; track status) {
-            <span class="flex items-center gap-2 text-xs">
-              <cp-status-badge [status]="status" />
-              {{ counts()[status] }}
-            </span>
-          }
-        </div>
-        @if (lots().length) {
-          <div class="mt-6 overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead>
-                <tr class="border-b border-line text-muted">
-                  <th scope="col" class="py-2 pr-4">{{ i18n.t('lot') }}</th>
-                  <th scope="col" class="py-2 pr-4">{{ i18n.t('totalNumbers') }}</th>
-                  <th scope="col" class="py-2 pr-4">{{ i18n.t('active') }}</th>
-                  <th scope="col" class="py-2 pr-4">{{ i18n.t('inactive') }}</th>
-                  <th scope="col" class="py-2">{{ i18n.t('suspended') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (summary of lots(); track summary.lot) {
-                  <tr class="border-b border-line">
-                    <th scope="row" class="py-2 pr-4 font-medium">
-                      {{ summary.lot ?? i18n.t('unknown') }}
-                    </th>
-                    <td class="py-2 pr-4">{{ summary.total }}</td>
-                    <td class="py-2 pr-4">{{ summary.active }}</td>
-                    <td class="py-2 pr-4">{{ summary.inactive }}</td>
-                    <td class="py-2">{{ summary.suspended }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </cp-card>
-    </div>
-    @if (commandMessage(); as message) {
-      <p-message [severity]="message.severity" role="status">{{ message.text }}</p-message>
-    }
-    @if (corporateData.mutationError(); as error) {
-      <p-message severity="error" role="alert">{{ i18n.t(error) }}</p-message>
-    }
-    <cp-card [title]="i18n.t('numbers')" [flush]="true">
-      <cp-data-table
-        [rows]="filteredRows()"
-        [columns]="columns()"
-        [label]="i18n.t('numbers')"
-        [selectable]="true"
-        [(selectedIds)]="selectedNumberIds"
-        [actions]="actions()"
-        (rowAction)="openDetails($event)"
-      >
-        <div table-filters class="flex flex-wrap items-center gap-2">
-          <p-select
-            [options]="lotOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [placeholder]="i18n.t('allLots')"
-            [ngModel]="lotFilter()"
-            (ngModelChange)="setLotFilter($event)"
-            [ariaLabel]="i18n.t('lot')"
-            appendTo="body"
-          />
-          <p-select
-            [options]="statusOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="statusFilter()"
-            (ngModelChange)="setStatusFilter($event)"
-            [ariaLabel]="i18n.t('status')"
-            appendTo="body"
-          />
-          <p-button
-            icon="pi pi-filter-slash"
-            severity="secondary"
-            [outlined]="true"
-            [ariaLabel]="i18n.t('clear')"
-            (onClick)="clearFilters()"
-          />
-        </div>
-        <p-button
-          table-bulk-actions
-          [label]="i18n.t('suspend')"
-          [ariaLabel]="i18n.t('suspend')"
-          icon="pi pi-pause"
-          severity="secondary"
-          size="small"
-          [disabled]="!suspendSupported()"
-          [pTooltip]="suspendSupported() ? undefined : i18n.t('commandUnavailable')"
-          (onClick)="pendingAction.set('suspend')"
-        />
-        <p-button
-          table-bulk-actions
-          [label]="i18n.t('resume')"
-          [ariaLabel]="i18n.t('resume')"
-          icon="pi pi-play"
-          severity="secondary"
-          size="small"
-          [disabled]="!resumeSupported()"
-          [pTooltip]="resumeSupported() ? undefined : i18n.t('commandUnavailable')"
-          (onClick)="pendingAction.set('resume')"
-        />
-        @if (!suspendSupported() || !resumeSupported()) {
-          <span table-bulk-actions class="text-xs text-muted" role="note">
-            {{ i18n.t('commandUnavailable') }}
+        @if (corporate.current()?.status; as status) {
+          <span
+            class="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium"
+            [attr.aria-label]="i18n.t('corporateStatus') + ': ' + status"
+          >
+            <span
+              class="size-2 rounded-full"
+              [class]="status === 'ACTIVE' ? 'bg-green-600' : 'bg-zinc-400'"
+            ></span>
+            {{ status }}
           </span>
         }
-      </cp-data-table>
-    </cp-card>
-    <p-dialog
-      [visible]="selectedNumber() !== null"
-      (visibleChange)="setDetailsVisible($event)"
-      [header]="i18n.t('details')"
-      [modal]="true"
-      [draggable]="false"
-      [resizable]="false"
-      [closeAriaLabel]="i18n.t('close')"
-      [pt]="{
-        root: { class: 'w-[520px] max-w-[calc(100vw-2rem)]' },
-        content: { class: 'overscroll-contain' },
-      }"
-    >
-      @if (selectedNumber(); as row) {
-        <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          @for (column of columns(); track column.field) {
-            <div>
-              <dt class="mb-1.5 text-xs text-muted">{{ column.header }}</dt>
+      </div>
+      <dl class="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 border-t border-line pt-5 sm:grid-cols-2">
+        @for (field of profileFields(); track field.key) {
+          <div class="flex min-w-0 gap-3">
+            <i class="pi mt-0.5 text-muted" [class]="field.icon" aria-hidden="true"></i>
+            <div class="min-w-0">
+              <dt class="mb-1 text-xs text-muted">{{ field.label }}</dt>
               <dd class="font-medium wrap-anywhere">
-                @if (column.type === 'status') {
-                  <cp-status-badge [status]="row.status" />
-                } @else {
-                  {{ row[column.field] ?? unknownValue }}
+                {{ field.value }}
+                @if (field.sub) {
+                  <span class="block text-xs font-normal text-muted">{{ field.sub }}</span>
                 }
               </dd>
             </div>
-          }
-          <div>
-            <dt class="mb-1.5 text-xs text-muted">ICCID</dt>
-            <dd class="font-medium wrap-anywhere">{{ row.iccid ?? unknownValue }}</dd>
           </div>
-        </dl>
+        }
+      </dl>
+      @if (corporateData.resource.data()?.updatedAt; as updatedAt) {
+        <p class="mt-5 flex items-center gap-2 text-xs text-muted">
+          <i class="pi pi-clock" aria-hidden="true"></i>
+          {{ i18n.t('dataAsOf') }} {{ formatDateTime(updatedAt) }}
+        </p>
       }
-      <ng-template #footer>
-        <p-button [label]="i18n.t('close')" severity="secondary" (onClick)="closeDetails()" />
-      </ng-template>
-    </p-dialog>
-    <cp-confirm-dialog
-      [busy]="corporateData.busy()"
-      [visible]="confirmVisible()"
-      (visibleChange)="setConfirmVisible($event)"
-      [title]="i18n.t(pendingAction() === 'resume' ? 'resumeTitle' : 'suspendTitle')"
-      [message]="i18n.t(pendingAction() === 'resume' ? 'resumeMessage' : 'suspendMessage')"
-      [danger]="pendingAction() !== 'resume'"
-      (confirmed)="runPendingCommand()"
-    />
+    </cp-card>
+    <cp-card [title]="i18n.t('numbersByStatus')">
+      <div class="flex flex-wrap items-baseline gap-3">
+        <strong class="text-4xl font-semibold tracking-tight">
+          {{ counts().total.toLocaleString(locale()) }}
+        </strong>
+        <span class="text-muted">{{ i18n.t('totalNumbers') }}</span>
+      </div>
+      <cp-segmented-bar
+        class="mt-6"
+        [segments]="statusSegments()"
+        [label]="i18n.t('numbersByStatus')"
+        [locale]="locale()"
+      />
+    </cp-card>
   </div>
-}
+  @if (lots().length) {
+    <cp-card [title]="i18n.t('lotSummary')" [flush]="true">
+      <ul
+        card-actions
+        class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600"
+        [attr.aria-label]="i18n.t('numbersByStatus')"
+      >
+        @for (segment of statusSegments(); track segment.key) {
+          <li class="flex items-center gap-1.5">
+            <span
+              class="size-2.5 rounded-sm"
+              [style.background]="
+                segment.pattern
+                  ? 'repeating-linear-gradient(45deg,' + segment.color + ' 0 4px,#fff 4px 7px)'
+                  : segment.color
+              "
+              aria-hidden="true"
+            ></span>
+            {{ segment.label }}
+          </li>
+        }
+      </ul>
+      <!-- Phones: one stacked row per lot. -->
+      <ul class="divide-y divide-line md:hidden">
+        @for (summary of lots(); track summary.lot) {
+          <li class="grid gap-2 px-4 py-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-semibold">{{ summary.lot ?? i18n.t('unknown') }}</p>
+                <p class="text-xs text-muted">{{ summary.productName ?? unknownValue }}</p>
+              </div>
+              <span class="shrink-0 text-lg font-semibold tabular-nums">
+                {{ summary.total.toLocaleString(locale()) }}
+              </span>
+            </div>
+            <span class="w-fit whitespace-nowrap rounded-md bg-zinc-100 px-2 py-1 text-xs">
+              {{ lotQuotaType(summary.quotaType) }}
+            </span>
+            <cp-segmented-bar
+              variant="thin"
+              [legend]="false"
+              [segments]="segmentsFor(summary)"
+              [label]="(summary.lot ?? i18n.t('unknown')) + ' · ' + i18n.t('numbersByStatus')"
+              [locale]="locale()"
+            />
+            <p class="text-xs text-muted tabular-nums">
+              {{ i18n.t('active') }} {{ summary.active }} · {{ i18n.t('inactive') }}
+              {{ summary.inactive }} · {{ i18n.t('suspended') }} {{ summary.suspended }}
+            </p>
+          </li>
+        }
+      </ul>
+      <div class="hidden overflow-x-auto md:block">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line bg-zinc-50 text-xs text-muted">
+              <th scope="col" class="px-4 py-3 font-medium sm:px-6">{{ i18n.t('lot') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ i18n.t('productName') }}</th>
+              <th scope="col" class="px-4 py-3 font-medium">{{ i18n.t('lotQuotaType') }}</th>
+              <th scope="col" class="px-4 py-3 text-right font-medium">
+                {{ i18n.t('totalNumbers') }}
+              </th>
+              <th scope="col" class="w-[32%] px-4 py-3 font-medium sm:pr-6">
+                {{ i18n.t('numbersByStatus') }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (summary of lots(); track summary.lot) {
+              <tr class="border-b border-line last:border-b-0 hover:bg-zinc-50">
+                <th scope="row" class="px-4 py-3 font-medium sm:px-6">
+                  {{ summary.lot ?? i18n.t('unknown') }}
+                </th>
+                <td class="px-4 py-3">{{ summary.productName ?? unknownValue }}</td>
+                <td class="px-4 py-3">
+                  <span class="whitespace-nowrap rounded-md bg-zinc-100 px-2 py-1 text-xs">
+                    {{ lotQuotaType(summary.quotaType) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right font-semibold tabular-nums">
+                  {{ summary.total.toLocaleString(locale()) }}
+                </td>
+                <td class="px-4 py-3 sm:pr-6">
+                  <cp-segmented-bar
+                    variant="thin"
+                    [legend]="false"
+                    [segments]="segmentsFor(summary)"
+                    [label]="(summary.lot ?? i18n.t('unknown')) + ' · ' + i18n.t('numbersByStatus')"
+                    [locale]="locale()"
+                  />
+                  <p class="mt-1.5 text-xs text-muted tabular-nums">
+                    {{ i18n.t('active') }} {{ summary.active }} · {{ i18n.t('inactive') }}
+                    {{ summary.inactive }} · {{ i18n.t('suspended') }} {{ summary.suspended }}
+                  </p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </cp-card>
+  }
+  <cp-card [title]="i18n.t('packagesInUse')">
+    @if (packages.loading()) {
+      <cp-feedback-state kind="loading" />
+    } @else if (packages.error(); as error) {
+      <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="packages.reload()" />
+    } @else if (!packages.data()?.items?.length) {
+      <cp-feedback-state kind="empty" [description]="i18n.t('noPackagesInUse')" />
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line text-muted">
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('packageName') }}</th>
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('productName') }}</th>
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('packageType') }}</th>
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('packageQuotas') }}</th>
+              <th scope="col" class="py-2 pr-4">{{ i18n.t('packagePrice') }}</th>
+              <th scope="col" class="py-2">{{ i18n.t('totalNumbers') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of packages.data()?.items ?? []; track item.packageId) {
+              <tr class="border-b border-line align-top">
+                <th scope="row" class="py-2 pr-4 font-medium">
+                  {{ item.name ?? item.packageId }}
+                  @if (item.status) {
+                    <span class="block text-xs font-normal text-muted">{{ item.status }}</span>
+                  }
+                </th>
+                <td class="py-2 pr-4">
+                  {{ item.productNames.length ? item.productNames.join(', ') : unknownValue }}
+                </td>
+                <td class="py-2 pr-4">{{ item.packageType ?? unknownValue }}</td>
+                <td class="py-2 pr-4 whitespace-pre-line">{{ packageQuotaText(item.quotas) }}</td>
+                <td class="py-2 pr-4">{{ packagePriceText(item.priceThb) }}</td>
+                <td class="py-2">{{ item.numbers }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </cp-card>
+  @if (commandMessage(); as message) {
+    <p-message [severity]="message.severity" role="status">{{ message.text }}</p-message>
+  }
+  @if (corporateData.mutationError(); as error) {
+    <p-message severity="error" role="alert">{{ i18n.t(error) }}</p-message>
+  }
+  <cp-card [title]="i18n.t('numbers')" [flush]="true">
+    <cp-data-table
+      [rows]="rows()"
+      [serverSide]="true"
+      [totalRecords]="corporateData.total()"
+      [loading]="corporateData.resource.loading()"
+      [error]="corporateData.resource.error() ? i18n.t(corporateData.resource.error()!) : ''"
+      (queryChange)="corporateData.query.set($event)"
+      (retry)="corporateData.resource.reload()"
+      [columns]="columns()"
+      [label]="i18n.t('numbers')"
+      [selectable]="true"
+      [(selectedIds)]="selectedNumberIds"
+      [actions]="actions()"
+      (rowAction)="openDetails($event)"
+    >
+      <div table-filters class="flex flex-wrap items-center gap-2">
+        <p-select
+          [options]="lotOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [placeholder]="i18n.t('allLots')"
+          [ngModel]="lotFilter()"
+          (ngModelChange)="setLotFilter($event)"
+          [ariaLabel]="i18n.t('lot')"
+          appendTo="body"
+        />
+        <p-select
+          [options]="statusOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="setStatusFilter($event)"
+          [ariaLabel]="i18n.t('status')"
+          appendTo="body"
+        />
+        <p-button
+          icon="pi pi-filter-slash"
+          severity="secondary"
+          [outlined]="true"
+          [ariaLabel]="i18n.t('clear')"
+          (onClick)="clearFilters()"
+        />
+      </div>
+      <p-button
+        table-bulk-actions
+        [label]="i18n.t('suspend')"
+        [ariaLabel]="i18n.t('suspend')"
+        icon="pi pi-pause"
+        severity="secondary"
+        size="small"
+        [disabled]="!suspendSupported()"
+        [pTooltip]="suspendSupported() ? undefined : i18n.t('commandUnavailable')"
+        (onClick)="pendingAction.set('suspend')"
+      />
+      <p-button
+        table-bulk-actions
+        [label]="i18n.t('resume')"
+        [ariaLabel]="i18n.t('resume')"
+        icon="pi pi-play"
+        severity="secondary"
+        size="small"
+        [disabled]="!resumeSupported()"
+        [pTooltip]="resumeSupported() ? undefined : i18n.t('commandUnavailable')"
+        (onClick)="pendingAction.set('resume')"
+      />
+      @if (!suspendSupported() || !resumeSupported()) {
+        <span table-bulk-actions class="text-xs text-muted" role="note">
+          {{ i18n.t('commandUnavailable') }}
+        </span>
+      }
+    </cp-data-table>
+  </cp-card>
+  <p-dialog
+    [visible]="selectedNumber() !== null"
+    (visibleChange)="setDetailsVisible($event)"
+    [header]="i18n.t('details')"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closeAriaLabel]="i18n.t('close')"
+    [pt]="{
+      root: { class: 'w-[520px] max-w-[calc(100vw-2rem)]' },
+      content: { class: 'overscroll-contain' },
+    }"
+  >
+    @if (selectedNumber(); as row) {
+      <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        @for (column of columns(); track column.field) {
+          <div>
+            <dt class="mb-1.5 text-xs text-muted">{{ column.header }}</dt>
+            <dd class="font-medium wrap-anywhere">
+              @if (column.type === 'status') {
+                <cp-status-badge [status]="row.status" />
+              } @else {
+                {{ row[column.field] ?? unknownValue }}
+              }
+            </dd>
+          </div>
+        }
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">ICCID</dt>
+          <dd class="font-medium wrap-anywhere">{{ row.iccid ?? unknownValue }}</dd>
+        </div>
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('productName') }}</dt>
+          <dd class="font-medium wrap-anywhere">{{ row.productName ?? unknownValue }}</dd>
+        </div>
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('packageName') }}</dt>
+          <dd class="font-medium wrap-anywhere">{{ row.packageName ?? unknownValue }}</dd>
+        </div>
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('subscriberSourceStatus') }}</dt>
+          <dd class="font-medium wrap-anywhere">{{ row.sourceStatus ?? unknownValue }}</dd>
+        </div>
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('simInventoryStatus') }}</dt>
+          <dd class="font-medium wrap-anywhere">{{ row.simInventoryStatus ?? unknownValue }}</dd>
+        </div>
+        <div>
+          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('numberInventoryStatus') }}</dt>
+          <dd class="font-medium wrap-anywhere">
+            {{ row.numberInventoryStatus ?? unknownValue }}
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('dataQuotaLeft') }}</dt>
+          <dd class="font-medium whitespace-pre-line wrap-anywhere">{{ row.quotaText }}</dd>
+        </div>
+      </dl>
+    }
+    <ng-template #footer>
+      <p-button [label]="i18n.t('close')" severity="secondary" (onClick)="closeDetails()" />
+    </ng-template>
+  </p-dialog>
+  <cp-confirm-dialog
+    [busy]="corporateData.busy()"
+    [visible]="confirmVisible()"
+    (visibleChange)="setConfirmVisible($event)"
+    [title]="i18n.t(pendingAction() === 'resume' ? 'resumeTitle' : 'suspendTitle')"
+    [message]="i18n.t(pendingAction() === 'resume' ? 'resumeMessage' : 'suspendMessage')"
+    [danger]="pendingAction() !== 'resume'"
+    (confirmed)="runPendingCommand()"
+  />
+</div>

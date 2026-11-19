@@ -1,0 +1,84 @@
+<div class="grid gap-6">
+  <cp-page-header [title]="t('title')" />
+  @if (summary.loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (summary.error(); as error) {
+    <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="summary.reload()" />
+  } @else {
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      @for (balance of summary.data()?.items ?? []; track balance.id) {
+        <cp-card [title]="balance.service ?? i18n.t('unknown')">
+          <cp-meter
+            class="mb-5"
+            [value]="balance.used"
+            [max]="balance.total"
+            [label]="(balance.service ?? i18n.t('unknown')) + ' · ' + t('used')"
+            [caption]="
+              amount(balance.used, balance.unit) + ' / ' + amount(balance.total, balance.unit)
+            "
+            [overLabel]="i18n.t('overLimit')"
+            [locale]="i18n.locale() === 'th' ? 'th-TH' : 'en-US'"
+          />
+          <dl class="grid gap-4 border-t border-line pt-4">
+            @for (key of quantities; track key) {
+              <div class="flex flex-wrap justify-between gap-2">
+                <dt class="text-muted">{{ t(key) }}</dt>
+                <dd
+                  class="font-semibold"
+                  [class.text-red-600]="key === 'remaining' && (balance.remaining ?? 0) < 0"
+                >
+                  {{ amount(balance[key], balance.unit) }}
+                </dd>
+              </div>
+            }
+            <div class="flex flex-wrap justify-between gap-2">
+              <dt class="text-muted">{{ t('activeMembers') }}</dt>
+              <dd>{{ balance.activeMembers }}</dd>
+            </div>
+            <div>
+              <dt class="text-muted">{{ t('expiresAt') }}</dt>
+              <dd>{{ date(balance.expiresAt) }}</dd>
+            </div>
+            <div>
+              <dt class="text-muted">{{ t('status') }}</dt>
+              <dd>{{ balance.expired ? t('expired') : (balance.status ?? '—') }}</dd>
+            </div>
+          </dl>
+        </cp-card>
+      } @empty {
+        <cp-feedback-state />
+      }
+    </div>
+    @if (summary.data()?.updatedAt; as updatedAt) {
+      <p class="text-xs text-muted">{{ i18n.t('dataAsOf') }} {{ date(updatedAt) }}</p>
+    }
+  }
+  <cp-card [title]="t('history')" [flush]="true">
+    <div class="flex flex-wrap gap-4 px-4 pb-4 sm:px-6">
+      <label class="grid gap-2">
+        {{ t('from') }}
+        <input pInputText type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" />
+      </label>
+      <label class="grid gap-2">
+        {{ t('to') }}
+        <input pInputText type="date" [ngModel]="to()" (ngModelChange)="to.set($event)" />
+      </label>
+    </div>
+    @if (invalidDates()) {
+      <p-message severity="warn">{{ t('invalidDates') }}</p-message>
+    }
+    <cp-data-table
+      [rows]="rows()"
+      [columns]="columns()"
+      [label]="t('history')"
+      [serverSide]="true"
+      [totalRecords]="history.data()?.total ?? 0"
+      [loading]="history.loading()"
+      [error]="history.error() ? i18n.t(history.error()!) : ''"
+      [cellTemplate]="historyCell"
+      (queryChange)="query.set($event)"
+      (retry)="history.reload()"
+    />
+  </cp-card>
+</div>
+<ng-template #historyCell let-row let-column="column">{{ cell(row, column.field) }}</ng-template>

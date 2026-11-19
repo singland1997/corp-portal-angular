@@ -1,0 +1,31 @@
+<div class="flex items-baseline justify-between gap-3">
+  <strong class="text-2xl font-semibold tracking-tight" [class.text-red-700]="over()">
+    {{ percent() }}
+  </strong>
+  @if (over()) {
+    <span class="flex items-center gap-1.5 text-xs font-medium text-red-700">
+      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+      {{ overLabel() }}
+    </span>
+  }
+</div>
+<div
+  role="meter"
+  class="mt-2 h-2.5 w-full overflow-hidden rounded-full"
+  [class]="ratio() === null ? 'bg-zinc-100' : 'bg-brand-soft'"
+  [attr.aria-label]="label()"
+  [attr.aria-valuemin]="0"
+  [attr.aria-valuemax]="max() ?? undefined"
+  [attr.aria-valuenow]="value() ?? undefined"
+  [attr.aria-valuetext]="percent() + (caption() ? ' · ' + caption() : '')"
+  [title]="percent() + (caption() ? ' · ' + caption() : '')"
+>
+  <div
+    class="h-full rounded-full transition-[width] duration-500"
+    [class]="over() ? 'bg-red-600' : 'bg-yellow-600'"
+    [style.width]="width()"
+  ></div>
+</div>
+@if (caption()) {
+  <p class="mt-2 text-xs text-muted">{{ caption() }}</p>
+}

@@ -1,3 +1,4 @@
+import { Page, pageResponse } from '@core/api/pagination';
 import { inject, Injectable } from '@angular/core';
 import { map } from 'rxjs';
 import { ApiClient } from '@core/api/api-client';
@@ -30,6 +31,16 @@ const reportResponse = objectOf({ report: text, rows: arrayOf(reportRow) });
 @Injectable({ providedIn: 'root' })
 export class ReportsApi {
   private readonly api = inject(ApiClient);
+
+  page(corporateId: string, reportId: string, params: Record<string, string | number | boolean>) {
+    return this.api
+      .get<unknown>('/reports/' + encodeURIComponent(reportId) + '/page', corporateId, params)
+      .pipe(
+        map((value) =>
+          parseResponse<Page<ReportRow>>(value, pageResponse(reportRow), 'report page'),
+        ),
+      );
+  }
 
   rows(corporateId: string, reportId: string, from: string, to: string) {
     const query = new URLSearchParams();
