@@ -85,9 +85,9 @@ describe('Portal integration', () => {
             packageType: 'main',
             productNames: ['Bundle 10GB'],
             status: 'ACTIVE',
-            priceRaw: 100000,
+            priceRaw: 250,
             currency: 'THB',
-            priceThb: null,
+            priceThb: 250,
             validityValue: 30,
             validityUnit: 'DAY',
             vatType: 'EXCLUDED',
@@ -126,7 +126,8 @@ describe('Portal integration', () => {
     ]) {
       expect(text).toContain(value);
     }
-    expect(text).not.toContain('100,000');
+    expect(text).toContain(page.packagePriceText(250));
+    expect(page.packagePriceText(250)).toContain('250.00');
     expect(page.packagePriceText(null)).toBe(page.unknownValue);
     expect(page.packageValidityText(1, 'MONTH')).toBe('1 month');
     expect(page.packageValidityText(0, 'DAY')).toBe(page.unknownValue);

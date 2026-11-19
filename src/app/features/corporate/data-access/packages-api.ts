@@ -35,7 +35,7 @@ export interface CorporatePackage {
   status: string | null;
   priceRaw: number | null;
   currency: string | null;
-  /** Null until the CRM `price_raw` scale is confirmed. */
+  /** `priceRaw` in baht when the currency is THB or missing; null otherwise. */
   priceThb: number | null;
   /** CRM validity; absent in older API responses. */
   validityValue?: number | null;

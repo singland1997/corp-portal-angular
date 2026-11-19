@@ -120,7 +120,7 @@ export class CorporatePage {
     return UNKNOWN_VALUE;
   }
 
-  /** Baht only when the server confirmed the price scale; otherwise "—" (never the raw value). */
+  /** `priceThb` is baht from the CRM (null for another currency or no price, shown as "—"). */
   packagePriceText(priceThb: number | null): string {
     return priceThb === null
       ? UNKNOWN_VALUE
