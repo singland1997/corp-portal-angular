@@ -43,7 +43,12 @@ import { corporateResource } from '@core/api/corporate-resource';
 import { FeedbackStateComponent } from '@shared/ui/feedback-state/feedback-state.component';
 
 /** แถวในตาราง = เลขหมาย + ปริมาณใช้งานที่จัดรูปแบบแล้ว */
-type NumberRow = MobileNumber & { usage: string; quotaText: string };
+type NumberRow = MobileNumber & {
+  usage: string;
+  voice: string;
+  smsCount: string;
+  quotaText: string;
+};
 
 /** Lot filter value for numbers whose current lot is unknown (null). */
 const UNKNOWN_LOT = '__unknown__';
@@ -292,9 +297,20 @@ export class CorporatePage {
     this.corporateData.numbers().map((number) => ({
       ...number,
       usage: formatDataSize(number.usageMb, this.i18n.locale(), 'GB'),
+      voice: this.countText(number.voiceMinutes, 'min'),
+      smsCount: this.countText(number.sms, null),
       quotaText: this.quotaText(number),
     })),
   );
+
+  /** Month-to-date count ("12.5 min", "3"); not mapped → "—", never 0. */
+  private countText(value: number | null | undefined, unit: string | null): string {
+    if (value === null || value === undefined) return UNKNOWN_VALUE;
+    const text = new Intl.NumberFormat(this.i18n.locale(), { maximumFractionDigits: 1 }).format(
+      value,
+    );
+    return unit ? `${text} ${unit}` : text;
+  }
 
   /** "remaining / total" per balance (API order); no balances → unknown, never 0. */
   private quotaText(number: MobileNumber): string {
@@ -315,7 +331,9 @@ export class CorporatePage {
     { field: 'lot', header: this.i18n.t('lot'), sortable: true },
     { field: 'owner', header: this.i18n.t('owner'), sortable: true },
     { field: 'package', header: this.i18n.t('package'), sortable: true },
-    { field: 'usage', header: this.i18n.t('totalUsage') },
+    { field: 'usage', header: this.i18n.t('dataThisMonth'), align: 'end' },
+    { field: 'voice', header: this.i18n.t('voiceThisMonth'), align: 'end' },
+    { field: 'smsCount', header: this.i18n.t('smsThisMonth'), align: 'end' },
     { field: 'status', header: this.i18n.t('status'), type: 'status', sortable: true },
   ]);
   readonly actions = computed(() => [
