@@ -16,6 +16,7 @@ import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { TranslationKey } from '@core/i18n/translation.models';
 import { PORTAL_STATUSES } from '@shared/models/portal-status';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog.component';
@@ -100,7 +101,26 @@ export class CorporatePage {
       .join('\n');
   }
 
-  /** Baht only when the server confirmed the price scale; otherwise "—" (never the raw value). */
+  /** "30 days" / "30 วัน"; unknown value or unit shows "—". */
+  packageValidityText(value?: number | null, unit?: string | null): string {
+    const units: Record<string, [TranslationKey, TranslationKey]> = {
+      DAY: ['validityDay', 'validityDays'],
+      MONTH: ['validityMonth', 'validityMonths'],
+      YEAR: ['validityYear', 'validityYears'],
+    };
+    const keys = unit ? units[unit] : undefined;
+    if (!value || !keys) return UNKNOWN_VALUE;
+    return `${value.toLocaleString(this.locale())} ${this.i18n.t(keys[value === 1 ? 0 : 1])}`;
+  }
+
+  /** VAT included/excluded as the CRM states it; anything else is unknown. */
+  packageVatText(type?: string | null): string {
+    if (type === 'INCLUDED') return this.i18n.t('vatIncluded');
+    if (type === 'EXCLUDED') return this.i18n.t('vatExcluded');
+    return UNKNOWN_VALUE;
+  }
+
+  /** `priceThb` is baht from the CRM (null for another currency or no price, shown as "—"). */
   packagePriceText(priceThb: number | null): string {
     return priceThb === null
       ? UNKNOWN_VALUE

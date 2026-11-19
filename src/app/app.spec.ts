@@ -85,9 +85,12 @@ describe('Portal integration', () => {
             packageType: 'main',
             productNames: ['Bundle 10GB'],
             status: 'ACTIVE',
-            priceRaw: 100000,
+            priceRaw: 250,
             currency: 'THB',
-            priceThb: null,
+            priceThb: 250,
+            validityValue: 30,
+            validityUnit: 'DAY',
+            vatType: 'EXCLUDED',
             numbers: 2,
             quotas: [
               {
@@ -118,11 +121,18 @@ describe('Portal integration', () => {
       'Bundle 10GB',
       'DATA · VOLUME · 10,000 MB',
       'DATA · UNLIMITED',
+      '30 days',
+      'VAT excluded',
     ]) {
       expect(text).toContain(value);
     }
-    expect(text).not.toContain('100,000');
+    expect(text).toContain(page.packagePriceText(250));
+    expect(page.packagePriceText(250)).toContain('250.00');
     expect(page.packagePriceText(null)).toBe(page.unknownValue);
+    expect(page.packageValidityText(1, 'MONTH')).toBe('1 month');
+    expect(page.packageValidityText(0, 'DAY')).toBe(page.unknownValue);
+    expect(page.packageValidityText(5, 'unknown')).toBe(page.unknownValue);
+    expect(page.packageVatText('unknown')).toBe(page.unknownValue);
   });
 
   it('shows CRM product, package, subscriber status and quota balances apart', async () => {

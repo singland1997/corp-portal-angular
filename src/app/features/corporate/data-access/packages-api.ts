@@ -7,6 +7,7 @@ import {
   finiteNumber,
   nullable,
   objectOf,
+  optional,
   oneOf,
   parseResponse,
   text,
@@ -34,8 +35,12 @@ export interface CorporatePackage {
   status: string | null;
   priceRaw: number | null;
   currency: string | null;
-  /** Null until the CRM `price_raw` scale is confirmed. */
+  /** `priceRaw` in baht when the currency is THB or missing; null otherwise. */
   priceThb: number | null;
+  /** CRM validity; absent in older API responses. */
+  validityValue?: number | null;
+  validityUnit?: 'DAY' | 'MONTH' | 'YEAR' | 'unknown' | null;
+  vatType?: 'INCLUDED' | 'EXCLUDED' | 'unknown' | null;
   numbers: number;
   quotas: PackageQuota[];
 }
@@ -49,6 +54,9 @@ const packageResponse = objectOf({
   priceRaw: nullable(finiteNumber),
   currency: nullable(text),
   priceThb: nullable(finiteNumber),
+  validityValue: optional(nullable(finiteNumber)),
+  validityUnit: optional(nullable(oneOf(['DAY', 'MONTH', 'YEAR', 'unknown']))),
+  vatType: optional(nullable(oneOf(['INCLUDED', 'EXCLUDED', 'unknown']))),
   numbers: finiteNumber,
   quotas: arrayOf(
     objectOf({
