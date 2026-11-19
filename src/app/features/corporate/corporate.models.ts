@@ -12,6 +12,9 @@ export interface MobileNumber {
   package: string | null;
   status: PortalStatus | null;
   usageMb: number | null;
+  /** Month-to-date voice minutes and SMS count; absent in older responses, null when not mapped. */
+  voiceMinutes?: number | null;
+  sms?: number | null;
   iccid: string | null;
   lot: string | null;
   /** CRM product (`res_product`), kept apart from the package; absent in older responses. */

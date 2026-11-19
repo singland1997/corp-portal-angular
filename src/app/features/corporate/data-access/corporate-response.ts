@@ -20,6 +20,8 @@ export const mobileNumberResponse = objectOf({
   package: nullable(text),
   status: nullable(oneOf(PORTAL_STATUSES)),
   usageMb: nullable(finiteNumber),
+  voiceMinutes: optional(nullable(finiteNumber)),
+  sms: optional(nullable(finiteNumber)),
   iccid: nullable(text),
   lot: nullable(text),
   productName: optional(nullable(text)),
