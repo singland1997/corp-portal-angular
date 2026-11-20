@@ -16,6 +16,9 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const origin = inject(DOCUMENT).location.origin;
   const session = inject(AuthSessionStore);
   if (!isPortalApi(request.url, base, origin)) return next(request);
+  if (new URL(request.url, origin).pathname.includes('/auth/')) {
+    request = request.clone({ withCredentials: true });
+  }
   const isLogin =
     request.method === 'POST' &&
     ['/auth/sessions', '/auth/sessions/refresh'].some((path) =>

@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -38,6 +39,13 @@ export class SetPasswordPage {
   private readonly api = inject(AuthApi);
 
   readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
+  constructor() {
+    const view = inject(DOCUMENT).defaultView;
+    if (!view) return;
+    const url = new URL(view.location.href);
+    url.searchParams.delete('token');
+    view.history.replaceState(view.history.state, '', url.pathname + url.search + url.hash);
+  }
 
   readonly password = signal('');
   readonly confirm = signal('');

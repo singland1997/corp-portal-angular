@@ -47,7 +47,7 @@ describe('API authentication and corporate context', () => {
     expect(auth.user()?.id).toBe('user');
     expect(TestBed.inject(AuthSessionStore).token()).toBe('test-token');
     expect(sessionStorage.getItem('corp-portal.session')).toBeNull();
-    expect(sessionStorage.getItem('corp-portal.refresh-token')).toBe('a'.repeat(64));
+    expect(sessionStorage.getItem('corp-portal.refresh-token')).toBeNull();
   });
   it('rejects failed logins without falling back to frontend accounts', async () => {
     const auth = TestBed.inject(AuthService),
@@ -60,7 +60,7 @@ describe('API authentication and corporate context', () => {
   it('rejects a malformed login response without reporting a connection failure', async () => {
     const pending = TestBed.inject(AuthService).signIn('test@example.test', 'secret');
     const message = pending.catch(apiErrorMessage);
-    const { refreshToken: _refresh, ...invalidSession } = testSession();
+    const { accessToken: _access, ...invalidSession } = testSession();
     http.expectOne('/api/v1/auth/sessions').flush(invalidSession);
     expect(await message).toBe('invalidServiceResponse');
     expect(TestBed.inject(AuthSessionStore).token()).toBeNull();
@@ -145,7 +145,7 @@ describe('API authentication and corporate context', () => {
     expect(guard()).toEqual(router.createUrlTree(['/login']));
     vi.restoreAllMocks();
   });
-  it('restores a session once using the API and persists the rotated refresh token', async () => {
+  it('restores a session once using the API cookie without persisting tokens', async () => {
     sessionStorage.setItem('corp-portal.refresh-token', 'a'.repeat(64));
     const auth = TestBed.inject(AuthService);
     const pending = auth.restoreSession();
@@ -153,19 +153,19 @@ describe('API authentication and corporate context', () => {
     expect(auth.user()).toBeNull();
     expect(sessionStorage.getItem('corp-portal.refresh-token')).toBeNull();
     const request = http.expectOne('/api/v1/auth/sessions/refresh');
-    expect(request.request.body).toEqual({ refreshToken: 'a'.repeat(64) });
+    expect(request.request.body).toEqual({});
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush({ ...testSession(), refreshToken: 'b'.repeat(64) });
     await pending;
     expect(auth.user()?.id).toBe('user');
-    expect(sessionStorage.getItem('corp-portal.refresh-token')).toBe('b'.repeat(64));
+    expect(sessionStorage.getItem('corp-portal.refresh-token')).toBeNull();
     expect(
       TestBed.runInInjectionContext(() =>
         authGuard({} as ActivatedRouteSnapshot, { url: '/data-pool' } as RouterStateSnapshot),
       ),
     ).toBe(true);
   });
-  it('requires login when the saved refresh token is revoked and does not retry it', async () => {
+  it('requires login when the refresh cookie is revoked and does not retry it', async () => {
     sessionStorage.setItem('corp-portal.refresh-token', 'a'.repeat(64));
     const auth = TestBed.inject(AuthService);
     const pending = auth.restoreSession();
@@ -180,8 +180,12 @@ describe('API authentication and corporate context', () => {
   });
   it('ignores malformed saved tokens', async () => {
     sessionStorage.setItem('corp-portal.refresh-token', 'invalid');
-    await TestBed.inject(AuthService).restoreSession();
-    http.expectNone('/api/v1/auth/sessions/refresh');
+    const pending = TestBed.inject(AuthService).restoreSession();
+    const request = http.expectOne('/api/v1/auth/sessions/refresh');
+    expect(request.request.body).toEqual({});
+    expect(request.request.withCredentials).toBe(true);
+    request.flush({}, { status: 401, statusText: 'Unauthorized' });
+    await pending;
     expect(sessionStorage.getItem('corp-portal.refresh-token')).toBeNull();
   });
   it('accepts sales sessions and rejects the retired role', () => {

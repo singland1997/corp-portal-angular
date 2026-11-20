@@ -12,7 +12,7 @@ export interface AuthUser {
 
 export interface LoginResponse {
   readonly accessToken: string;
-  readonly refreshToken: string;
+  readonly refreshToken?: string;
   readonly tokenType: 'Bearer';
   readonly expiresIn: number;
   readonly user: AuthUser;

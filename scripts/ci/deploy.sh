@@ -14,6 +14,7 @@ target="${2:?usage: deploy.sh plan|deploy dev|prod}"
 : "${AWS_REGION:?set AWS_REGION}" "${TF_STATE_REGION:?set TF_STATE_REGION}"
 
 export TARGET_ENV="$target" APP_ENV="$target" AWS_PAGER="" AWS_DEFAULT_REGION="$AWS_REGION"
+export TF_VAR_api_base_url="${API_BASE_URL:-/api}"
 export TF_IN_AUTOMATION=true TF_INPUT=false TF_VAR_aws_region="$AWS_REGION" TF_VAR_aws_account_id="$AWS_ACCOUNT_ID"
 plan_file=infra/terraform/deployment.tfplan
 # Plans can contain sensitive infrastructure values: never keep or upload them.

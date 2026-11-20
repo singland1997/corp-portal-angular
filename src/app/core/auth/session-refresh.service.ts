@@ -2,14 +2,12 @@ import { effect, inject, Injectable } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSessionStore } from './auth-session.store';
 import { AuthApi } from './auth-api.service';
-import { RefreshTokenStore } from './refresh-token.store';
 
 /** Single refresh in flight. */
 @Injectable({ providedIn: 'root' })
 export class SessionRefresh {
   private readonly session = inject(AuthSessionStore);
   private readonly api = inject(AuthApi);
-  private readonly refreshTokens = inject(RefreshTokenStore);
   constructor() {
     effect((onCleanup) => {
       const original = this.session.session();
@@ -17,8 +15,7 @@ export class SessionRefresh {
       let subscription: { unsubscribe(): void } | undefined;
       const timer = setTimeout(
         () => {
-          this.refreshTokens.clear();
-          subscription = this.api.refresh(original.refreshToken).subscribe({
+          subscription = this.api.refresh().subscribe({
             next: (response) => {
               if (
                 !this.session.signingOut() &&

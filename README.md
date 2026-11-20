@@ -48,3 +48,9 @@ S3 + CloudFront ผ่าน GitHub Actions: merge เข้า `main` deploy de
 4. รัน deploy ด้วย `action = plan` ตรวจแล้วค่อย `deploy`
 
 ห้ามใส่ secret ใน `src/environments` (ทุกค่าอยู่ใน JavaScript ที่ deploy)
+
+## Login และ CSP
+
+- refresh token อยู่ใน HttpOnly cookie ที่ API ตั้ง (ไม่เก็บใน JavaScript) access token อยู่ใน memory; reload แล้วขอ session ใหม่จาก cookie
+- API ต้องอยู่ host เดียวกับ UI ผ่าน `/api` (deploy UI กับ API คู่กัน)
+- CSP ตั้งใน Terraform (`api_base_url` เดียวกับตอน build) ปิด inline-critical CSS เพราะสร้าง inline script

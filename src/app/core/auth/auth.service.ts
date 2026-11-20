@@ -1,15 +1,25 @@
+import { DOCUMENT } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthSessionStore } from './auth-session.store';
 import { AuthApi } from './auth-api.service';
-import { RefreshTokenStore } from './refresh-token.store';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly session = inject(AuthSessionStore);
   private readonly api = inject(AuthApi);
-  private readonly refreshTokens = inject(RefreshTokenStore);
+  private readonly document = inject(DOCUMENT);
+  private logoutPreference(value?: boolean): boolean {
+    try {
+      const storage = this.document.defaultView?.sessionStorage;
+      if (value === true) storage?.setItem('corp-portal.signed-out', '1');
+      if (value === false) storage?.removeItem('corp-portal.signed-out');
+      return storage?.getItem('corp-portal.signed-out') === '1';
+    } catch {
+      return false;
+    }
+  }
   private restoration?: Promise<void>;
   readonly user = this.session.user;
 
@@ -19,11 +29,9 @@ export class AuthService {
   }
 
   private async restore(): Promise<void> {
-    if (this.session.token()) return;
-    const token = this.refreshTokens.take();
-    if (!token) return;
+    if (this.session.token() || this.logoutPreference()) return;
     try {
-      const response = await firstValueFrom(this.api.refresh(token));
+      const response = await firstValueFrom(this.api.refresh());
       if (!this.session.signingOut()) this.session.set(response);
     } catch (error) {
       this.session.renewalFailed.set(
@@ -37,13 +45,14 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<boolean> {
     const response = await firstValueFrom(this.api.login(email, password));
     this.session.set(response);
+    this.logoutPreference(false);
     return true;
   }
 
   async signOut(): Promise<void> {
     const token = this.session.token();
     this.session.signingOut.set(true);
-    this.refreshTokens.clear();
+    this.logoutPreference(true);
     try {
       if (token) await firstValueFrom(this.api.logout());
     } finally {
