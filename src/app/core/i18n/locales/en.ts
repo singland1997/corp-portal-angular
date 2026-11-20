@@ -81,6 +81,7 @@ export const en = {
   corporateUser: 'Corporate user',
   salesUser: 'Sales',
   selectCorporate: 'Select organization',
+  switchCorporate: 'Switch organization',
   days: 'days',
   signIn: 'Sign in',
   signOut: 'Sign out',

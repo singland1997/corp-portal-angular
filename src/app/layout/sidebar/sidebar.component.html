@@ -23,6 +23,18 @@
       <small class="mt-1 block text-xs text-muted">{{ corporate.current()?.code }}</small>
     </div>
   </div>
+  @if (showSwitcher() && corporate.canSwitch()) {
+    <div class="mx-4 mb-4 px-2">
+      <label class="mb-2 block text-xs font-medium text-muted" for="drawer-corporate-select">
+        {{ i18n.t('switchCorporate') }}
+      </label>
+      <cp-corporate-select
+        inputId="drawer-corporate-select"
+        [fluid]="true"
+        (selected)="navigated.emit()"
+      />
+    </div>
+  }
   <nav class="min-h-0 flex-1 overflow-y-auto px-3" [attr.aria-label]="i18n.t('workspace')">
     <p-menu
       [model]="menuItems()"

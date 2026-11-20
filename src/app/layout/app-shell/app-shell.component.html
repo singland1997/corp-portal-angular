@@ -30,5 +30,5 @@
   [closeButtonProps]="{ ariaLabel: i18n.t('closeMenu') }"
   [pt]="{ root: { class: 'w-72' } }"
 >
-  <cp-sidebar (navigated)="mobileMenu.set(false)" />
+  <cp-sidebar [showSwitcher]="true" (navigated)="mobileMenu.set(false)" />
 </p-drawer>
