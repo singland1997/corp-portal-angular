@@ -53,7 +53,6 @@ export const en = {
   subscriberSourceStatus: 'Subscriber status (CRM)',
   simInventoryStatus: 'SIM inventory status',
   numberInventoryStatus: 'Number inventory status',
-  dataQuotaLeft: 'Data quota left',
   expires: 'expires',
   productQuota: 'Product quota',
   shareInGroupQuota: 'Share in group',
@@ -72,6 +71,7 @@ export const en = {
   tooManyRequests: 'Too many requests. Please try again later.',
   serviceUnavailable: 'This service is not available yet. Please try again later.',
   requestFailed: 'Unable to complete the request. Check your connection and try again.',
+  notFound: 'Not found in the selected organization.',
   commandUnavailable:
     'This action needs the provisioning API connection, which is not configured. No change was made.',
   sourceNotSynced: 'Data for this organization has not been synchronized yet.',

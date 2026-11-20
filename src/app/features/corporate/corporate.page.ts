@@ -9,8 +9,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
@@ -23,7 +23,6 @@ import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog
 import { DataTableComponent } from '@shared/ui/data-table/data-table.component';
 import { TableActionEvent, TableColumn } from '@shared/ui/data-table/data-table.models';
 import { PageHeaderComponent } from '@shared/ui/page-header/page-header.component';
-import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 import { formatDataSize, UNKNOWN_VALUE } from '@shared/utils/data-size';
 import {
   COUNTED_STATUSES,
@@ -46,7 +45,6 @@ type NumberRow = MobileNumber & {
   usage: string;
   voice: string;
   smsCount: string;
-  quotaText: string;
 };
 
 /** Lot filter value for numbers whose current lot is unknown (null). */
@@ -59,7 +57,6 @@ const UNKNOWN_LOT = '__unknown__';
   imports: [
     FormsModule,
     ButtonModule,
-    DialogModule,
     MessageModule,
     SelectModule,
     TooltipModule,
@@ -68,7 +65,6 @@ const UNKNOWN_LOT = '__unknown__';
     DataTableComponent,
     FeedbackStateComponent,
     PageHeaderComponent,
-    StatusBadgeComponent,
     SegmentedBarComponent,
   ],
   templateUrl: './corporate.page.html',
@@ -78,6 +74,7 @@ export class CorporatePage {
   readonly corporate = inject(CorporateContext);
   readonly corporateData = inject(CorporateDataService);
   private readonly packagesApi = inject(PackagesApi);
+  private readonly router = inject(Router);
   readonly packages = corporateResource((id) => this.packagesApi.list(id));
 
   /** One line per quota: "DATA · VOLUME · 10,000 MB", "DATA · UNLIMITED". */
@@ -288,7 +285,6 @@ export class CorporatePage {
       usage: formatDataSize(number.usageMb, this.i18n.locale(), 'GB'),
       voice: this.countText(number.voiceMinutes, 'min'),
       smsCount: this.countText(number.sms, null),
-      quotaText: this.quotaText(number),
     })),
   );
 
@@ -301,20 +297,6 @@ export class CorporatePage {
     return unit ? `${text} ${unit}` : text;
   }
 
-  /** "remaining / total" per balance (API order); no balances → unknown, never 0. */
-  private quotaText(number: MobileNumber): string {
-    const quotas = number.quotas ?? [];
-    if (!quotas.length) return UNKNOWN_VALUE;
-    const locale = this.i18n.locale();
-    return quotas
-      .map(
-        (q) =>
-          `${formatDataSize(q.remainingMb, locale)} / ${formatDataSize(q.totalMb, locale)}` +
-          (q.capMax ? ' (Cap max)' : '') +
-          (q.expiresAt ? ` · ${this.i18n.t('expires')} ${this.formatDateTime(q.expiresAt)}` : ''),
-      )
-      .join('\n');
-  }
   readonly columns = computed<TableColumn<NumberRow>[]>(() => [
     { field: 'mobile', header: this.i18n.t('mobile'), sortable: true },
     { field: 'lot', header: this.i18n.t('lot'), sortable: true },
@@ -330,7 +312,6 @@ export class CorporatePage {
   ]);
 
   readonly selectedNumberIds = signal<string[]>([]);
-  readonly selectedNumber = signal<NumberRow | null>(null);
   readonly pendingAction = signal<NumberAction | null>(null);
   readonly confirmVisible = computed(() => this.pendingAction() !== null);
   readonly commandSummary = signal<{ action: NumberAction; results: CommandResult[] } | null>(null);
@@ -353,7 +334,6 @@ export class CorporatePage {
       this.corporate.current()?.id;
       untracked(() => {
         this.clearFilters();
-        this.closeDetails();
         this.pendingAction.set(null);
         this.commandSummary.set(null);
         this.corporateData.mutationError.set(null);
@@ -389,15 +369,7 @@ export class CorporatePage {
   }
 
   openDetails(event: TableActionEvent<NumberRow>): void {
-    if (event.action === 'details') this.selectedNumber.set(event.row);
-  }
-
-  closeDetails(): void {
-    this.selectedNumber.set(null);
-  }
-
-  setDetailsVisible(visible: boolean): void {
-    if (!visible) this.closeDetails();
+    if (event.action === 'details') void this.router.navigate(['/corporate/numbers', event.row.id]);
   }
 
   setConfirmVisible(visible: boolean): void {

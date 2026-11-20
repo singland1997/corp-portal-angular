@@ -295,69 +295,6 @@
       }
     </cp-data-table>
   </cp-card>
-  <p-dialog
-    [visible]="selectedNumber() !== null"
-    (visibleChange)="setDetailsVisible($event)"
-    [header]="i18n.t('details')"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [closeAriaLabel]="i18n.t('close')"
-    [pt]="{
-      root: { class: 'w-[520px] max-w-[calc(100vw-2rem)]' },
-      content: { class: 'overscroll-contain' },
-    }"
-  >
-    @if (selectedNumber(); as row) {
-      <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        @for (column of columns(); track column.field) {
-          <div>
-            <dt class="mb-1.5 text-xs text-muted">{{ column.header }}</dt>
-            <dd class="font-medium wrap-anywhere">
-              @if (column.type === 'status') {
-                <cp-status-badge [status]="row.status" />
-              } @else {
-                {{ row[column.field] ?? unknownValue }}
-              }
-            </dd>
-          </div>
-        }
-        <div>
-          <dt class="mb-1.5 text-xs text-muted">ICCID</dt>
-          <dd class="font-medium wrap-anywhere">{{ row.iccid ?? unknownValue }}</dd>
-        </div>
-        <div>
-          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('productName') }}</dt>
-          <dd class="font-medium wrap-anywhere">{{ row.productName ?? unknownValue }}</dd>
-        </div>
-        <div>
-          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('packageName') }}</dt>
-          <dd class="font-medium wrap-anywhere">{{ row.packageName ?? unknownValue }}</dd>
-        </div>
-        <div>
-          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('subscriberSourceStatus') }}</dt>
-          <dd class="font-medium wrap-anywhere">{{ row.sourceStatus ?? unknownValue }}</dd>
-        </div>
-        <div>
-          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('simInventoryStatus') }}</dt>
-          <dd class="font-medium wrap-anywhere">{{ row.simInventoryStatus ?? unknownValue }}</dd>
-        </div>
-        <div>
-          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('numberInventoryStatus') }}</dt>
-          <dd class="font-medium wrap-anywhere">
-            {{ row.numberInventoryStatus ?? unknownValue }}
-          </dd>
-        </div>
-        <div class="sm:col-span-2">
-          <dt class="mb-1.5 text-xs text-muted">{{ i18n.t('dataQuotaLeft') }}</dt>
-          <dd class="font-medium whitespace-pre-line wrap-anywhere">{{ row.quotaText }}</dd>
-        </div>
-      </dl>
-    }
-    <ng-template #footer>
-      <p-button [label]="i18n.t('close')" severity="secondary" (onClick)="closeDetails()" />
-    </ng-template>
-  </p-dialog>
   <cp-confirm-dialog
     [busy]="corporateData.busy()"
     [visible]="confirmVisible()"
