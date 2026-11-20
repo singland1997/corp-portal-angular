@@ -26,10 +26,10 @@ variable "aws_account_id" {
 
 variable "api_base_url" {
   description = "Same API URL used by the Angular build; adds only its origin to CSP. Cookie refresh requires same-site HTTPS domains."
-  type = string
-  default = "/api"
+  type        = string
+  default     = "/api"
   validation {
-    condition = var.api_base_url == "/api" || can(regex("^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[^?#]*)?$", var.api_base_url))
+    condition     = var.api_base_url == "/api" || can(regex("^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[^?#]*)?$", var.api_base_url))
     error_message = "api_base_url must be /api or an HTTPS URL without credentials/query/fragment."
   }
 }
