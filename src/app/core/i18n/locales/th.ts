@@ -55,7 +55,6 @@ export const th: Record<TranslationKey, string> = {
   subscriberSourceStatus: 'สถานะผู้ใช้บริการ (CRM)',
   simInventoryStatus: 'สถานะคลัง SIM',
   numberInventoryStatus: 'สถานะคลังเลขหมาย',
-  dataQuotaLeft: 'โควตาดาต้าคงเหลือ',
   expires: 'หมดอายุ',
   productQuota: 'โควตาตามผลิตภัณฑ์',
   shareInGroupQuota: 'แชร์ในกลุ่ม',
@@ -73,6 +72,7 @@ export const th: Record<TranslationKey, string> = {
   tooManyRequests: 'มีคำขอมากเกินไป กรุณาลองอีกครั้งภายหลัง',
   serviceUnavailable: 'บริการนี้ยังไม่พร้อมใช้งาน กรุณาลองอีกครั้งภายหลัง',
   requestFailed: 'ไม่สามารถดำเนินการได้ กรุณาตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
+  notFound: 'ไม่พบข้อมูลนี้ในองค์กรที่เลือก',
   commandUnavailable:
     'รายการนี้ต้องเชื่อมต่อ provisioning API ซึ่งยังไม่ได้ตั้งค่า ยังไม่มีการเปลี่ยนแปลงข้อมูล',
   sourceNotSynced: 'ยังไม่ได้ซิงก์ข้อมูลขององค์กรนี้',

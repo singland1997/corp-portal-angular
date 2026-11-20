@@ -40,6 +40,11 @@ export const routes: Routes = [
           import('@features/corporate/corporate.page').then((m) => m.CorporatePage),
       },
       {
+        path: 'corporate/numbers/:id',
+        loadComponent: () =>
+          import('@features/number-detail/number-detail.page').then((m) => m.NumberDetailPage),
+      },
+      {
         path: 'sim',
         loadComponent: () => import('@features/sim/sim.page').then((m) => m.SimPage),
       },

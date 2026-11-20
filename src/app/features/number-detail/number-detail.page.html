@@ -1,0 +1,224 @@
+<div class="grid gap-4 md:gap-6">
+  <cp-page-header [title]="detail.data()?.mobile ?? t('title')">
+    <p-button
+      [label]="t('back')"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      [outlined]="true"
+      routerLink="/corporate"
+    />
+  </cp-page-header>
+
+  @if (detail.loading()) {
+    <cp-feedback-state kind="loading" />
+  } @else if (detail.error(); as error) {
+    <cp-feedback-state kind="error" [description]="i18n.t(error)" (retry)="detail.reload()" />
+  } @else if (detail.data(); as number) {
+    <div class="grid gap-4 md:grid-cols-2 md:gap-6">
+      <cp-card [title]="t('subscriber')" [subtitle]="t('subscriberHint')">
+        <dl class="grid gap-4">
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ i18n.t('mobile') }}</dt>
+            <dd class="font-semibold wrap-anywhere">{{ number.mobile }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">ICCID</dt>
+            <dd class="font-medium wrap-anywhere">{{ number.iccid ?? unknown }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-3">
+            <dt class="text-muted">{{ i18n.t('status') }}</dt>
+            <dd><cp-status-badge [status]="number.status" /></dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ t('activationDate') }}</dt>
+            <dd class="font-medium">{{ dateTime(number.activationDate) }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ t('expiryDate') }}</dt>
+            <dd class="font-medium">{{ dateTime(number.expiryDate) }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ i18n.t('lot') }}</dt>
+            <dd class="font-medium wrap-anywhere">{{ number.lot ?? unknown }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ i18n.t('owner') }}</dt>
+            <dd class="font-medium wrap-anywhere">{{ number.owner ?? unknown }}</dd>
+          </div>
+        </dl>
+      </cp-card>
+
+      <cp-card [title]="t('inventory')" [subtitle]="t('inventoryHint')">
+        <dl class="grid gap-4">
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ i18n.t('numberInventoryStatus') }}</dt>
+            <dd class="font-medium wrap-anywhere">{{ number.numberInventoryStatus ?? unknown }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ i18n.t('simInventoryStatus') }}</dt>
+            <dd class="font-medium wrap-anywhere">{{ number.simInventoryStatus ?? unknown }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ i18n.t('subscriberSourceStatus') }}</dt>
+            <dd class="font-medium wrap-anywhere">{{ number.sourceStatus ?? unknown }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ t('createdAt') }}</dt>
+            <dd class="font-medium">{{ dateTime(number.numberCreatedAt) }}</dd>
+          </div>
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+            <dt class="text-muted">{{ t('updatedAt') }}</dt>
+            <dd class="font-medium">{{ dateTime(number.numberUpdatedAt) }}</dd>
+          </div>
+        </dl>
+      </cp-card>
+
+      <cp-card [title]="t('mainProduct')" [subtitle]="t('mainProductHint')">
+        @if (main(); as item) {
+          <p class="mb-4 text-lg font-semibold wrap-anywhere">
+            {{ item.productName ?? item.name ?? unknown }}
+          </p>
+          <dl class="grid gap-4">
+            <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+              <dt class="text-muted">{{ t('packageDetails') }}</dt>
+              <dd class="font-medium wrap-anywhere">{{ item.name ?? unknown }}</dd>
+            </div>
+            <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+              <dt class="text-muted">{{ t('starts') }}</dt>
+              <dd class="font-medium">{{ date(item.startDate) }}</dd>
+            </div>
+            <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+              <dt class="text-muted">{{ t('ends') }}</dt>
+              <dd class="font-medium">{{ date(item.endDate) }}</dd>
+            </div>
+            <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+              <dt class="text-muted">{{ t('daysLeft') }}</dt>
+              <dd class="font-semibold">
+                @if (daysLeft(item); as days) {
+                  {{ days }} {{ t('days') }}
+                } @else if (daysLeft(item) === 0) {
+                  0 {{ t('days') }}
+                } @else {
+                  {{ unknown }}
+                }
+              </dd>
+            </div>
+            <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+              <dt class="text-muted">{{ t('validity') }}</dt>
+              <dd class="font-medium">{{ validity(item) }}</dd>
+            </div>
+            <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3">
+              <dt class="text-muted">{{ t('price') }}</dt>
+              <dd class="font-medium">
+                {{ price(item) }}
+                @if (item.priceThb !== null && item.vatType) {
+                  <span class="text-xs text-muted">({{ vat(item) }})</span>
+                }
+              </dd>
+            </div>
+          </dl>
+        } @else {
+          <cp-feedback-state [title]="t('noMainProduct')" />
+        }
+      </cp-card>
+
+      <cp-card [title]="t('addons')" [subtitle]="t('addonsHint')">
+        <ul class="grid gap-3">
+          @for (item of addons(); track item.id) {
+            <li class="grid gap-1 rounded-lg border border-line p-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-semibold wrap-anywhere">{{ item.name ?? unknown }}</span>
+                <span
+                  class="rounded-full px-2 py-0.5 text-xs font-medium"
+                  [class]="
+                    item.current ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-muted'
+                  "
+                >
+                  {{ item.current ? t('current') : t('past') }}
+                </span>
+              </div>
+              <span class="text-xs text-muted">
+                {{ t('starts') }} {{ date(item.startDate) }} · {{ t('ends') }}
+                {{ date(item.endDate) }}
+                @if (daysLeft(item) !== null) {
+                  · {{ t('daysLeft') }} {{ daysLeft(item) }} {{ t('days') }}
+                }
+              </span>
+            </li>
+          } @empty {
+            <li><cp-feedback-state [title]="t('noAddons')" /></li>
+          }
+        </ul>
+      </cp-card>
+
+      <cp-card [title]="t('balances')" [subtitle]="t('balancesHint')">
+        <ul class="grid gap-5">
+          @for (balance of number.balances; track balance.id) {
+            <li class="grid gap-2">
+              <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <span class="font-semibold">
+                  {{ balance.serviceType ?? i18n.t('unknown') }}
+                  @if (balance.capMax) {
+                    <span class="text-xs font-normal text-muted">· {{ t('capMax') }}</span>
+                  }
+                </span>
+                <span class="text-sm">
+                  {{ t('remaining') }}
+                  <strong
+                    [class.text-red-600]="balance.remaining !== null && balance.remaining < 0"
+                  >
+                    {{ amount(balance.remaining, balance.unit) }}
+                  </strong>
+                  {{ t('of') }} {{ amount(balance.total, balance.unit) }}
+                </span>
+              </div>
+              <cp-meter
+                [value]="used(balance)"
+                [max]="balance.total"
+                [label]="(balance.serviceType ?? i18n.t('unknown')) + ' · ' + t('used')"
+                [caption]="
+                  t('used') +
+                  ' ' +
+                  amount(used(balance), balance.unit) +
+                  ' / ' +
+                  amount(balance.total, balance.unit)
+                "
+                [overLabel]="i18n.t('overLimit')"
+                [locale]="i18n.locale() === 'th' ? 'th-TH' : 'en-US'"
+              />
+              <span class="text-xs text-muted wrap-anywhere">
+                {{ balance.packageName ?? unknown }} · {{ i18n.t('expires') }}
+                {{ dateTime(balance.expireDate) }}
+              </span>
+            </li>
+          } @empty {
+            <li><cp-feedback-state [title]="t('noBalances')" /></li>
+          }
+        </ul>
+      </cp-card>
+
+      <cp-card [title]="t('usage')" [subtitle]="t('usageHint')">
+        <dl class="grid grid-cols-3 gap-3">
+          <div class="rounded-lg border border-line p-3">
+            <dt class="text-xs text-muted">{{ t('data') }}</dt>
+            <dd class="mt-1 text-lg font-semibold">{{ data(number.usageMb) }}</dd>
+          </div>
+          <div class="rounded-lg border border-line p-3">
+            <dt class="text-xs text-muted">{{ t('voice') }}</dt>
+            <dd class="mt-1 text-lg font-semibold">{{ count(number.voiceMinutes, 'min') }}</dd>
+          </div>
+          <div class="rounded-lg border border-line p-3">
+            <dt class="text-xs text-muted">{{ t('sms') }}</dt>
+            <dd class="mt-1 text-lg font-semibold">{{ count(number.sms, null) }}</dd>
+          </div>
+        </dl>
+        @if (number.usageThrough) {
+          <p class="mt-3 text-xs text-muted">
+            {{ t('usageThrough') }} {{ date(number.usageThrough) }}
+          </p>
+        }
+      </cp-card>
+    </div>
+    <p class="text-xs text-muted">{{ i18n.t('dataAsOf') }} {{ dateTime(number.updatedAt) }}</p>
+  }
+</div>

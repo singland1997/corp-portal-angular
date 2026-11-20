@@ -10,6 +10,7 @@ import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { en } from '@core/i18n/locales/en';
 import { th } from '@core/i18n/locales/th';
 import { CorporatePage } from '@features/corporate/corporate.page';
+import { NumberDetailPage } from '@features/number-detail/number-detail.page';
 import { testSession, testEnvironment } from '../testing/auth.fixture';
 import { testNumber, testNumberPage } from '../testing/number-page.fixture';
 
@@ -18,7 +19,10 @@ describe('Portal integration', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: 'corporate', component: CorporatePage }]),
+        provideRouter([
+          { path: 'corporate', component: CorporatePage },
+          { path: 'corporate/numbers/:id', component: NumberDetailPage },
+        ]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: APP_ENVIRONMENT, useValue: testEnvironment },
@@ -43,7 +47,7 @@ describe('Portal integration', () => {
     return pending[0];
   };
 
-  it('keeps the route, filters, selection and detail when language changes without reloading data', async () => {
+  it('keeps the route, filters and selection when language changes without reloading data', async () => {
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl('/corporate', CorporatePage);
     pageRequest().flush(testNumberPage([testNumber]));
@@ -55,14 +59,12 @@ describe('Portal integration', () => {
     request.flush(testNumberPage([testNumber]));
     harness.detectChanges();
     page.selectedNumberIds.set(['1']);
-    page.selectedNumber.set(page.rows()[0]);
     for (const locale of ['th', 'en'] as const) {
       TestBed.inject(LocaleService).setLocale(locale);
       harness.detectChanges();
       expect(TestBed.inject(Router).url).toBe('/corporate');
       expect(page.statusFilter()).toBe('active');
       expect(page.selectedNumberIds()).toEqual(['1']);
-      expect(page.selectedNumber()?.id).toBe('1');
     }
     http.expectNone((request) => request.url.includes('/numbers'));
   });
@@ -135,42 +137,106 @@ describe('Portal integration', () => {
     expect(page.packageVatText('unknown')).toBe(page.unknownValue);
   });
 
-  it('shows CRM product, package, subscriber status and quota balances apart', async () => {
+  it('opens a number on its own page: packages, balances and usage, no staff names', async () => {
     TestBed.inject(LocaleService).setLocale('en');
     const harness = await RouterTestingHarness.create();
     const page = await harness.navigateByUrl('/corporate', CorporatePage);
-    pageRequest().flush(
-      testNumberPage([
-        {
-          ...testNumber,
-          package: 'Bundle 10GB',
-          productName: 'Bundle 10GB',
-          packageName: 'Data 10GB',
-          sourceStatus: 'ACTIVE',
-          simInventoryStatus: 'IN_USE',
-          numberInventoryStatus: 'PROVISIONED',
-          quotas: [{ totalMb: 1024, remainingMb: 512, expiresAt: null, capMax: true }],
-        },
-        { ...testNumber, id: '2', mobile: '0810000002' },
-      ]),
-    );
+    pageRequest().flush(testNumberPage([testNumber]));
     harness.detectChanges();
-    expect(page.rows()[0].quotaText).toContain('(Cap max)');
-    expect(page.rows()[1].quotaText).toBe(page.unknownValue);
-    page.selectedNumber.set(page.rows()[0]);
+    page.openDetails({ action: 'details', row: page.rows()[0] });
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/corporate/numbers/1');
+    TestBed.tick();
+    http.expectOne('/api/v1/corporates/A/numbers/1').flush({
+      ...testNumber,
+      iccid: '8966001',
+      sourceStatus: 'ACTIVE',
+      simInventoryStatus: 'IN_USE',
+      numberInventoryStatus: 'PROVISIONED',
+      voiceMinutes: 5,
+      sms: null,
+      activationDate: '2026-11-17T07:58:10Z',
+      expiryDate: null,
+      numberCreatedAt: '2026-10-25T02:07:52Z',
+      numberUpdatedAt: null,
+      packages: [
+        {
+          id: 'sp1',
+          packageId: 'PCK-7',
+          name: '4G01 Smart DATA & IOT',
+          packageType: 'MAIN',
+          productName: '4G Smart IoT 30MB',
+          startDate: '2026-11-17T00:00:00Z',
+          endDate: '2999-12-17T07:58:10Z',
+          current: true,
+          validityValue: 1,
+          validityUnit: 'MONTH',
+          priceThb: null,
+          vatType: 'EXCLUDED',
+        },
+        {
+          id: 'sp2',
+          packageId: 'PCK-5',
+          name: '4G Smart IoT 30MB add-on',
+          packageType: 'ADDON',
+          productName: null,
+          startDate: '2026-11-17T00:00:00Z',
+          endDate: '2999-12-17T07:58:10Z',
+          current: true,
+          validityValue: 1,
+          validityUnit: 'MONTH',
+          priceThb: null,
+          vatType: null,
+        },
+      ],
+      balances: [
+        {
+          id: 'q1',
+          serviceType: 'DATA',
+          unit: 'MB',
+          total: 70,
+          remaining: 20,
+          capMax: true,
+          startDate: null,
+          expireDate: '2999-12-17T07:58:10Z',
+          packageName: '4G Smart IoT 30MB add-on',
+        },
+      ],
+      updatedAt: '2026-11-20T00:00:00Z',
+      usageThrough: '2026-11-19',
+    });
     harness.detectChanges();
     const text = document.body.textContent ?? '';
     for (const value of [
-      'Data 10GB',
-      'ACTIVE',
-      'Subscriber status (CRM)',
-      'Data quota left',
-      'SIM inventory status',
+      '0810000001',
+      '8966001',
       'IN_USE',
       'PROVISIONED',
+      '4G Smart IoT 30MB',
+      '4G01 Smart DATA & IOT',
+      '1 month(s)',
+      '4G Smart IoT 30MB add-on',
+      'Cap max',
+      '5 min',
     ]) {
       expect(text).toContain(value);
     }
+    expect(text).not.toContain('manuwat');
+  });
+
+  it('says a number of another organization is not found', async () => {
+    TestBed.inject(LocaleService).setLocale('en');
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/corporate/numbers/x', NumberDetailPage);
+    TestBed.tick();
+    http
+      .expectOne('/api/v1/corporates/A/numbers/x')
+      .flush(
+        { error: { code: 'NOT_FOUND', message: 'Record not found in this organization.' } },
+        { status: 404, statusText: 'Not Found' },
+      );
+    harness.detectChanges();
+    expect(document.body.textContent).toContain('Not found in the selected organization.');
   });
 
   it('uses full corporate summaries, sends filters to the API and clears old tenant data', async () => {

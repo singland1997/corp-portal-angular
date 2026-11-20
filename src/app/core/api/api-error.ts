@@ -7,6 +7,7 @@ import { TimeoutError } from 'rxjs';
 const CODE_MESSAGES: Record<string, TranslationKey> = {
   COMMAND_API_UNAVAILABLE: 'commandUnavailable',
   SOURCE_NOT_SYNCED: 'sourceNotSynced',
+  NOT_FOUND: 'notFound',
 };
 
 export function apiErrorCode(error: unknown): string | null {
