@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { SelectModule } from 'primeng/select';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 
 import { AvatarModule } from 'primeng/avatar';
@@ -12,6 +10,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { AuthService } from '@core/auth/auth.service';
 import { LocaleService } from '@core/i18n/locale.service';
 
+import { CorporateSelectComponent } from '@layout/corporate-select/corporate-select.component';
 import { LanguageSwitchComponent } from '@shared/ui/language-switch/language-switch.component';
 
 @Component({
@@ -23,8 +22,7 @@ import { LanguageSwitchComponent } from '@shared/ui/language-switch/language-swi
     ButtonModule,
     PopoverModule,
     LanguageSwitchComponent,
-    FormsModule,
-    SelectModule,
+    CorporateSelectComponent,
   ],
   templateUrl: './header.component.html',
 })
@@ -41,14 +39,6 @@ export class HeaderComponent {
     );
   });
 
-  selectCorporate(id: string): void {
-    this.corporate.select(id);
-    void this.router.navigate([], {
-      queryParams: { pool: null },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
-  }
   async signOut(): Promise<void> {
     try {
       await this.auth.signOut();

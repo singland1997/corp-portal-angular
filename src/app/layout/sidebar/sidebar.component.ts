@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { MenuItem } from 'primeng/api';
@@ -8,12 +8,13 @@ import { MenuModule } from 'primeng/menu';
 import { LocaleService } from '@core/i18n/locale.service';
 import { CorporateContext } from '@core/corporate/corporate-context.service';
 import { AuthSessionStore } from '@core/auth/auth-session.store';
+import { CorporateSelectComponent } from '@layout/corporate-select/corporate-select.component';
 import { canSee, workspaceNavigation } from '@core/routing/portal-navigation';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'cp-sidebar',
-  imports: [RouterLink, RouterLinkActive, MenuModule, AvatarModule],
+  imports: [RouterLink, RouterLinkActive, MenuModule, AvatarModule, CorporateSelectComponent],
   host: { class: 'block h-full' },
   templateUrl: './sidebar.component.html',
 })
@@ -21,6 +22,8 @@ export class SidebarComponent {
   readonly i18n = inject(LocaleService);
   readonly corporate = inject(CorporateContext);
   private readonly auth = inject(AuthSessionStore);
+  /** Show the organization switcher (mobile drawer only; desktop uses the header). */
+  readonly showSwitcher = input(false);
   readonly navigated = output<void>();
   readonly groups = [{ title: 'workspace' as const, items: workspaceNavigation }];
   readonly menuItems = computed<MenuItem[]>(() =>

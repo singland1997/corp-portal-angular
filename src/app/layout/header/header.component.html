@@ -21,15 +21,7 @@
         <span class="hidden xl:inline">{{ i18n.t('workspace') }}</span>
         <i class="pi pi-angle-right hidden text-xs xl:inline" aria-hidden="true"></i>
         @if (corporate.canSwitch()) {
-          <p-select
-            [options]="corporate.options()"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="corporate.current()?.id"
-            (ngModelChange)="selectCorporate($event)"
-            [ariaLabel]="i18n.t('selectCorporate')"
-            appendTo="body"
-          />
+          <cp-corporate-select />
         } @else {
           <strong class="font-medium text-zinc-600">{{ corporate.name() }}</strong>
         }
@@ -86,16 +78,7 @@
     </div>
     @if (corporate.canSwitch()) {
       <div class="mt-3 min-[901px]:hidden">
-        <p-select
-          [options]="corporate.options()"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="corporate.current()?.id"
-          (ngModelChange)="selectCorporate($event); account.hide()"
-          [ariaLabel]="i18n.t('selectCorporate')"
-          appendTo="body"
-          fluid
-        />
+        <cp-corporate-select [fluid]="true" (selected)="account.hide()" />
       </div>
     }
     <div class="mt-3 border-t border-line pt-3">

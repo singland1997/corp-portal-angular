@@ -82,6 +82,7 @@ export const th: Record<TranslationKey, string> = {
   corporateUser: 'ผู้ใช้องค์กร',
   salesUser: 'ฝ่ายขาย',
   selectCorporate: 'เลือกองค์กร',
+  switchCorporate: 'เปลี่ยนองค์กร',
   days: 'วัน',
   signIn: 'เข้าสู่ระบบ',
   signOut: 'ออกจากระบบ',
