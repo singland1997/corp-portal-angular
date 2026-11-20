@@ -5,7 +5,7 @@
 # Repository variables (Settings → Secrets and variables → Actions → Variables), prefixed by
 # environment because GitHub Environments are not available on private repos with GitHub Free:
 #   DEV_AWS_ROLE_ARN, DEV_AWS_ACCOUNT_ID, DEV_AWS_REGION, DEV_TF_STATE_BUCKET,
-#   DEV_TF_STATE_REGION, DEV_API_BASE_URL  (and the same with PROD_)
+#   DEV_TF_STATE_REGION, DEV_API_BASE_URL, DEV_API_ROUTES  (and the same with PROD_)
 # A missing value never falls back to the other environment.
 name: deploy
 
@@ -48,6 +48,8 @@ jobs:
       TF_STATE_BUCKET: ${{ vars[format('{0}_TF_STATE_BUCKET', inputs.environment || 'dev')] }}
       TF_STATE_REGION: ${{ vars[format('{0}_TF_STATE_REGION', inputs.environment || 'dev')] || 'ap-southeast-1' }}
       API_BASE_URL: ${{ vars[format('{0}_API_BASE_URL', inputs.environment || 'dev')] || '/api' }}
+      # JSON list from corp-portal-api `terraform output -json cloudfront_api_routes`.
+      API_ROUTES: ${{ vars[format('{0}_API_ROUTES', inputs.environment || 'dev')] || '[]' }}
     steps:
       - name: Check AWS configuration
         id: config

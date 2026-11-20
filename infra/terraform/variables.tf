@@ -33,3 +33,29 @@ variable "api_base_url" {
     error_message = "api_base_url must be /api or an HTTPS URL without credentials/query/fragment."
   }
 }
+
+variable "api_routes" {
+  description = "CloudFront behaviors for /api: output cloudfront_api_routes of corp-portal-api. Empty = /api answers 503."
+  type = list(object({
+    path_pattern = string
+    origin_id    = string
+    domain_name  = string
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for route in var.api_routes :
+      startswith(route.path_pattern, "/api/") && can(regex("^[A-Za-z0-9.-]+$", route.domain_name)) && route.origin_id != "frontend"
+    ])
+    error_message = "Each route needs an /api/ path, a bare host name and an origin_id other than frontend."
+  }
+
+  validation {
+    condition = alltrue([
+      for id in distinct([for route in var.api_routes : route.origin_id]) :
+      length(distinct([for route in var.api_routes : route.domain_name if route.origin_id == id])) == 1
+    ])
+    error_message = "Routes that share an origin_id must share its domain_name."
+  }
+}

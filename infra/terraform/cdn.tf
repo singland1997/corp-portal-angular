@@ -59,6 +59,18 @@ resource "aws_cloudfront_response_headers_policy" "frontend" {
   }
 }
 
+data "aws_cloudfront_cache_policy" "disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
+locals {
+  api_origins = { for route in var.api_routes : route.origin_id => route.domain_name }
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -72,6 +84,40 @@ resource "aws_cloudfront_distribution" "frontend" {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "frontend"
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
+  }
+
+  # API services (HTTP APIs from corp-portal-api, output cloudfront_api_routes).
+  dynamic "origin" {
+    for_each = local.api_origins
+    content {
+      domain_name = origin.value
+      origin_id   = origin.key
+      custom_origin_config {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2"]
+        origin_read_timeout    = 30
+      }
+    }
+  }
+
+  # Never cached; every viewer header, cookie and query string except Host reaches the API
+  # (API Gateway needs its own Host). The API sees the UI Origin, so the API's
+  # CORS_ALLOWED_ORIGINS must hold this distribution's origin for cookie refresh.
+  dynamic "ordered_cache_behavior" {
+    for_each = var.api_routes
+    content {
+      path_pattern               = ordered_cache_behavior.value.path_pattern
+      target_origin_id           = ordered_cache_behavior.value.origin_id
+      viewer_protocol_policy     = "https-only"
+      allowed_methods            = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods             = ["GET", "HEAD"]
+      compress                   = true
+      cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+      origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_except_host.id
+      response_headers_policy_id = aws_cloudfront_response_headers_policy.frontend.id
+    }
   }
 
   default_cache_behavior {
