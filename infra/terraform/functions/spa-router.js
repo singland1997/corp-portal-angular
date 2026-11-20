@@ -2,7 +2,8 @@ function handler(event) {
   var request = event.request;
   var uri = request.uri;
 
-  // Until an API origin is configured, never serve index.html for API requests.
+  // API paths with a route (var.api_routes) never reach this function; any other /api path
+  // gets a JSON 503 instead of index.html.
   if (uri === '/api' || uri.startsWith('/api/')) {
     return {
       statusCode: 503,
