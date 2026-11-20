@@ -14,8 +14,8 @@ export class AuthApi {
   logout() {
     return this.api.delete<void>('/auth/sessions/current');
   }
-  refresh(refreshToken: string) {
-    return this.api.post<LoginResponse>('/auth/sessions/refresh', { refreshToken });
+  refresh() {
+    return this.api.post<LoginResponse>('/auth/sessions/refresh', {});
   }
   /** ผู้ใช้ใหม่ตั้งรหัสผ่านจากลิงก์ที่ admin ส่งให้ (ไม่ต้อง login) */
   setupPassword(token: string, password: string) {

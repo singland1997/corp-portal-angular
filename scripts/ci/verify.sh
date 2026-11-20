@@ -7,6 +7,7 @@ target="${1:?usage: verify.sh dev|prod}"
 
 node --version
 npm ci --no-audit --no-fund
+npm audit --audit-level=moderate
 npm run format:check
 npm run test:deployment
 npm test -- --watch=false

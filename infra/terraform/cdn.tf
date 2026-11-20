@@ -37,6 +37,10 @@ resource "aws_cloudfront_cache_policy" "frontend" {
 resource "aws_cloudfront_response_headers_policy" "frontend" {
   name = local.name
   security_headers_config {
+    content_security_policy {
+      content_security_policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${var.api_base_url == "/api" ? "" : regex("^https://[^/]+", var.api_base_url)}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+      override                = true
+    }
     content_type_options {
       override = true
     }
